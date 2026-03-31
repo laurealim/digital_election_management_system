@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer create-project:*)",
+      "Bash(composer require:*)",
+      "Bash(php artisan:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(npm run:*)",
+      "Bash(find /e/wamp64/www/dems/frontend/src -name i18n* -not -path */node_modules/*)",
+      "Bash(grep -n '\\\\$subject\\\\|\\\\$mailSubject' /e/wamp64/www/dems/backend/resources/views/mail/password-reset.blade.php)",
+      "Bash(echo \"EXIT: $?\")",
+      "Read(//e/wamp64/bin/php/php8.4.0/**)",
+      "Bash(python3 -c \":*)",
+      "Bash(powershell -Command \"\\(Get-Content ''E:\\\\wamp64\\\\bin\\\\php\\\\php8.4.0\\\\php.ini''\\) -replace ''curl.cainfo = .*'', ''curl.cainfo = \"\"E:\\\\wamp64\\\\bin\\\\php\\\\php8.4.0\\\\extras\\\\ssl\\\\cacert.pem\"\"'' | Set-Content ''E:\\\\wamp64\\\\bin\\\\php\\\\php8.4.0\\\\php.ini''\")",
+      "Bash(powershell -Command \"\\(Get-Content ''E:\\\\wamp64\\\\bin\\\\php\\\\php8.4.0\\\\php.ini''\\) -replace ''openssl.cafile = .*'', ''openssl.cafile = \"\"E:\\\\wamp64\\\\bin\\\\php\\\\php8.4.0\\\\extras\\\\ssl\\\\cacert.pem\"\"'' | Set-Content ''E:\\\\wamp64\\\\bin\\\\php\\\\php8.4.0\\\\php.ini''\")"
+    ]
+  }
+}
