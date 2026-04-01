@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Election;
 use App\Models\Post;
 use App\Models\User;
+use App\Models\Voter;
 
 class PostPolicy
 {
@@ -12,8 +13,20 @@ class PostPolicy
     {
         if ($user->isSuperAdmin()) return true;
 
-        return $user->can('view-elections')
-            && $user->organization_id === $election->organization_id;
+        // Management roles with view-elections permission
+        if ($user->can('view-elections')
+            && $user->organization_id === $election->organization_id) {
+            return true;
+        }
+
+        // Voters/candidates enrolled in the election can view posts (ballot page)
+        if ($user->can('cast-vote')) {
+            return Voter::where('election_id', $election->id)
+                ->where('user_id', $user->id)
+                ->exists();
+        }
+
+        return false;
     }
 
     public function create(User $user, Election $election): bool

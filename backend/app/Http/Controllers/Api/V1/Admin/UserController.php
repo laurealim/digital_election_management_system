@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
 class UserController extends ApiController
 {
     // Roles that can be created/managed via this controller (no voter/candidate)
-    const STAFF_ROLES = ['super_admin', 'org_admin', 'org_user', 'election_admin', 'election_user'];
+    const STAFF_ROLES = ['super_admin', 'org_admin', 'org_user', 'election_admin', 'election_user', 'moderator'];
 
     public function __construct(private readonly PasswordResetService $passwordResetService) {}
 
@@ -24,9 +24,21 @@ class UserController extends ApiController
      */
     public function index(Request $request): JsonResponse
     {
+        $nonModeratorStaff = array_diff(self::STAFF_ROLES, ['moderator']);
+
         $query = User::withoutGlobalScopes()
             ->with(['roles:id,name', 'organization:id,name'])
             ->whereHas('roles', fn ($q) => $q->whereIn('name', self::STAFF_ROLES))
+            // Exclude voter-moderators: users whose only staff role is 'moderator'
+            // AND who also have voter/candidate role (assigned via election tab).
+            // Pure staff moderators (created via admin users) are kept.
+            ->where(function ($q) use ($nonModeratorStaff) {
+                $q->whereHas('roles', fn ($r) => $r->whereIn('name', $nonModeratorStaff))
+                   ->orWhere(function ($q2) {
+                       $q2->whereHas('roles', fn ($r) => $r->where('name', 'moderator'))
+                          ->whereDoesntHave('roles', fn ($r) => $r->whereIn('name', ['voter', 'candidate']));
+                   });
+            })
             ->when($request->organization_id, fn ($q, $id) =>
                 $q->where('organization_id', $id)
             )
@@ -214,7 +226,40 @@ class UserController extends ApiController
             'organization' => $user->organization?->name,
             'org_id'       => $user->organization_id,
             'setup_email_status' => $user->setup_email_status,
+            'assigned_election_ids' => $user->assignedElections()->pluck('elections.id')->values(),
             'created_at'         => $user->created_at?->toDateTimeString(),
         ];
+    }
+
+    /**
+     * GET /api/v1/admin/users/{user}/assigned-elections
+     * List elections assigned to a moderator user.
+     */
+    public function assignedElections(User $user): JsonResponse
+    {
+        return $this->success([
+            'election_ids' => $user->assignedElections()->pluck('elections.id')->values(),
+            'elections'    => $user->assignedElections()
+                ->select('elections.id', 'elections.name', 'elections.status')
+                ->get(),
+        ]);
+    }
+
+    /**
+     * PUT /api/v1/admin/users/{user}/assigned-elections
+     * Sync assigned elections for a moderator user.
+     */
+    public function syncAssignedElections(Request $request, User $user): JsonResponse
+    {
+        $request->validate([
+            'election_ids'   => ['required', 'array'],
+            'election_ids.*' => ['integer', 'exists:elections,id'],
+        ]);
+
+        $user->assignedElections()->sync($request->election_ids);
+
+        return $this->success([
+            'election_ids' => $user->assignedElections()->pluck('elections.id')->values(),
+        ], 'Elections assigned successfully.');
     }
 }

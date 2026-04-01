@@ -108,7 +108,10 @@
     "voting_over": "Voting time is over",
     "posts_done": "posts selected",
     "next_post": "Next Post",
-    "selected_elsewhere": "Selected in another post"
+    "selected_elsewhere": "Selected in another post",
+    "candidate_list": "Candidate List",
+    "search_candidate": "Search by name or email",
+    "candidates_count_label": "candidates"
   },
   "results": {
     "title": "Election Results",
@@ -145,5 +148,27 @@
     "sign_in": "Sign in",
     "register": "Register",
     "setup_password": "Setup Password"
+  },
+  "moderator": {
+    "reset_password": "Reset Password",
+    "select_election": "Select Election",
+    "choose_election": "-- Choose an election --",
+    "select_voter": "Search & Select Voter",
+    "search_voter_placeholder": "Search by name, email or mobile...",
+    "no_voters_found": "No voters found.",
+    "voter_info": "Voter Information",
+    "generate_reset_link": "Generate Reset Link",
+    "reset_link_generated": "Reset Link Generated",
+    "link_for_voter": "Password reset link for:",
+    "reset_link_label": "Reset Password Link",
+    "link_warning": "This link is valid for 60 minutes. Share it securely with the voter. No email will be sent."
+  },
+  "moderator_tab": {
+    "title": "Moderators",
+    "moderator": "Moderator",
+    "moderators": "moderators",
+    "voter_only": "Voter",
+    "assign": "Assign Moderator",
+    "unassign": "Remove Moderator"
   }
 }

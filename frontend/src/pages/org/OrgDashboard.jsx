@@ -42,7 +42,7 @@ export default function OrgDashboard() {
   }))
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 w-full">
       <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
 
       {/* Stat cards */}

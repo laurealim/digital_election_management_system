@@ -123,7 +123,7 @@ function ElectionCard({ election }) {
   const canVote = !hasVoted && (isActive || (election.status === 'scheduled' && started && !ended))
 
   return (
-    <div className="bg-card border rounded-xl p-5 flex items-start gap-4 hover:shadow-sm transition-shadow">
+    <div className="bg-card border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-4 hover:shadow-sm transition-shadow">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold truncate">{election.name}</span>
@@ -151,7 +151,7 @@ function ElectionCard({ election }) {
         )}
       </div>
 
-      <div className="shrink-0 flex flex-col gap-2 items-end">
+      <div className="shrink-0 flex flex-row sm:flex-col gap-2 items-start sm:items-end flex-wrap">
         {hasVoted && (election.status === 'active' || election.status === 'scheduled') && (
           <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm font-medium">
             <CheckCircle2 size={14} /> ভোট দেওয়া হয়েছে

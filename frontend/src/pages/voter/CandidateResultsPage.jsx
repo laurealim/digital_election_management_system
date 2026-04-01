@@ -27,7 +27,7 @@ export default function CandidateResultsPage() {
 
   if (error) {
     return (
-      <div className="max-w-lg mx-auto py-12 text-center space-y-4">
+      <div className="w-full max-w-lg mx-auto py-12 text-center space-y-4 px-4 sm:px-0">
         <p className="text-muted-foreground text-sm">
           {error.response?.data?.message ?? t('results.not_published')}
         </p>
@@ -41,7 +41,7 @@ export default function CandidateResultsPage() {
   const posts = data?.posts ?? []
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 py-4">
+    <div className="w-full max-w-2xl mx-auto space-y-8 py-4 px-4 sm:px-0">
       {/* Header */}
       <div>
         <button
@@ -103,7 +103,7 @@ function PostResultCard({ post, t }) {
 
       <div className="p-5 space-y-4">
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
           <div className="space-y-1">
             <p className="text-2xl font-bold text-primary">{post.votes_received}</p>
             <p className="text-xs text-muted-foreground">{t('results.votes_received')}</p>

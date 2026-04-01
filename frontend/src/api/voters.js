@@ -29,5 +29,8 @@ export const importVoters = (electionId, file) => {
 export const exportVoters = (electionId) =>
   api.get(`/elections/${electionId}/voters/export`, { responseType: 'blob' })
 
+export const toggleModerator = (electionId, voterId) =>
+  api.post(`/elections/${electionId}/voters/${voterId}/toggle-moderator`)
+
 export const sendBulkInvitations = (electionId, voterIds = []) =>
   api.post(`/elections/${electionId}/voters/send-invitations`, { voter_ids: voterIds })

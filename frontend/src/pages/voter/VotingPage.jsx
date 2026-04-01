@@ -7,7 +7,7 @@ import {
 } from '@/api/votes'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Loader2, Search, User } from 'lucide-react'
+import { CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Loader2, Search, User, List, X } from 'lucide-react'
 
 const STEP_INSTRUCTIONS = 'instructions'
 const STEP_BALLOT       = 'ballot'
@@ -185,6 +185,7 @@ function InstructionsScreen({ election, onProceed, onBack }) {
 export function BallotScreen({ election, posts, loading, ballot, setBallot, onBack, onReview }) {
   const { t }                     = useTranslation()
   const [activeTab, setActiveTab] = useState(0)
+  const [showCandidateList, setShowCandidateList] = useState(false)
 
   const allAnswered   = posts.length > 0 && posts.every((p) => ballot[p.id])
   const answeredCount = posts.filter((p) => ballot[p.id]).length
@@ -208,7 +209,9 @@ export function BallotScreen({ election, posts, loading, ballot, setBallot, onBa
   }
 
   return (
-    <div className="space-y-5">
+    <div className="flex gap-5 items-start">
+      {/* ── Main ballot column ── */}
+      <div className="flex-1 min-w-0 space-y-5">
       {/* Header + progress */}
       <div>
         <button onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-3">
@@ -307,6 +310,128 @@ export function BallotScreen({ election, posts, loading, ballot, setBallot, onBa
           {t('voting.positions_remaining', { count: posts.filter((p) => !ballot[p.id]).length })}
         </p>
       )}
+      </div>
+
+      {/* ── Candidate List Toggle (mobile) ── */}
+      {!loading && posts.length > 0 && (
+        <button
+          onClick={() => setShowCandidateList(true)}
+          className="lg:hidden fixed bottom-4 right-4 z-30 bg-primary text-primary-foreground rounded-full p-3 shadow-lg hover:bg-primary/90 transition-colors"
+          title={t('voting.candidate_list')}
+        >
+          <List size={20} />
+        </button>
+      )}
+
+      {/* ── Candidate List Sidebar (desktop) ── */}
+      {!loading && posts.length > 0 && (
+        <div className="hidden lg:block w-72 xl:w-80 shrink-0 sticky top-4 self-start">
+          <CandidateListPanel posts={posts} ballot={ballot} />
+        </div>
+      )}
+
+      {/* ── Candidate List Drawer (mobile) ── */}
+      {showCandidateList && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowCandidateList(false)} />
+          <div className="relative ml-auto w-80 max-w-[85vw] h-full bg-background shadow-xl overflow-y-auto">
+            <div className="sticky top-0 bg-background border-b px-4 py-3 flex items-center justify-between z-10">
+              <h3 className="font-semibold text-sm">{t('voting.candidate_list')}</h3>
+              <button onClick={() => setShowCandidateList(false)} className="text-muted-foreground hover:text-foreground">
+                <X size={18} />
+              </button>
+            </div>
+            <CandidateListPanel posts={posts} ballot={ballot} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Candidate List Panel ─────────────────────────────────────────────────────
+function CandidateListPanel({ posts, ballot }) {
+  const { t } = useTranslation()
+  const [search, setSearch] = useState('')
+
+  const q = search.toLowerCase().trim()
+
+  // Deduplicate candidates across all posts by user id
+  const seen = new Set()
+  const allCandidates = posts.flatMap((post) =>
+    (post.candidates ?? []).filter((cand) => {
+      const uid = cand.user?.id ?? cand.id
+      if (seen.has(uid)) return false
+      seen.add(uid)
+      return true
+    })
+  )
+
+  const filtered = allCandidates.filter((cand) => {
+    if (!q) return true
+    return (
+      cand.user?.name?.toLowerCase().includes(q) ||
+      cand.user?.email?.toLowerCase().includes(q)
+    )
+  })
+
+  // Build a set of selected candidate ids across all posts
+  const selectedIds = new Set(Object.values(ballot).map((b) => b.candidateId))
+
+  return (
+    <div className="space-y-1 p-3">
+      <h3 className="font-semibold text-sm mb-2 hidden lg:block">{t('voting.candidate_list')}</h3>
+      <div className="relative mb-2">
+        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('voting.search_candidate')}
+          className="w-full h-8 pl-8 pr-7 rounded-md border border-input bg-background text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+      {filtered.length === 0 && q && (
+        <p className="text-xs text-muted-foreground text-center py-3">{t('common.no_results')}</p>
+      )}
+      <div className="border rounded-lg overflow-hidden divide-y">
+        {filtered.map((cand) => {
+          const isSelected = selectedIds.has(cand.id)
+          return (
+            <div
+              key={cand.id}
+              className={`flex items-center gap-2 px-3 py-2 text-xs transition-colors ${
+                isSelected ? 'bg-green-50 border-l-2 border-l-green-500' : ''
+              }`}
+            >
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                isSelected ? 'bg-green-600 text-white' : 'bg-primary/10 text-primary'
+              }`}>
+                {cand.user?.name?.charAt(0)?.toUpperCase() ?? '?'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`font-medium truncate ${isSelected ? 'text-green-700' : ''}`}>
+                  {cand.user?.name}
+                </p>
+                {(cand.user?.designation || cand.user?.office_name) && (
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {[cand.user?.designation, cand.user?.office_name].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+              </div>
+              {isSelected && <CheckCircle2 size={12} className="text-green-600 shrink-0" />}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -485,7 +610,7 @@ function PostBallotSection({ post, selected, selectedElsewhere, onSelect }) {
 function ReviewScreen({ election, posts, ballot, onBack, onSubmit, submitting, error }) {
   const { t } = useTranslation()
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="w-full max-w-lg mx-auto space-y-6 px-4 sm:px-0">
       <div>
         <button onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-3">
           <ChevronLeft size={14} /> {t('voting.edit_ballot')}
@@ -531,7 +656,7 @@ function ReviewScreen({ election, posts, ballot, onBack, onSubmit, submitting, e
 function VoteConfirmedScreen({ election, ballot, posts, onBack }) {
   const { t } = useTranslation()
   return (
-    <div className="max-w-lg mx-auto text-center space-y-6 py-8">
+    <div className="w-full max-w-lg mx-auto text-center space-y-6 py-8 px-4 sm:px-0">
       <CheckCircle2 size={56} className="mx-auto text-green-600" />
       <div>
         <h1 className="text-2xl font-bold">{t('voting.vote_submitted')}</h1>
@@ -563,7 +688,7 @@ function VoteConfirmedScreen({ election, ballot, posts, onBack }) {
 function AlreadyVotedScreen({ election, votedAt, onBack }) {
   const { t } = useTranslation()
   return (
-    <div className="max-w-lg mx-auto text-center space-y-5 py-8">
+    <div className="w-full max-w-lg mx-auto text-center space-y-5 py-8 px-4 sm:px-0">
       <CheckCircle2 size={48} className="mx-auto text-green-600" />
       <div>
         <h1 className="text-xl font-bold">{t('voting.already_voted_title')}</h1>

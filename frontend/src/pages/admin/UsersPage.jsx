@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getStaffUsers, createStaffUser, updateStaffUser, updateStaffRole, toggleUserStatus, resendSetupEmail } from '@/api/adminUsers'
-import { getOrganizationsList } from '@/api/roles'
+import { getStaffUsers, createStaffUser, updateStaffUser, updateStaffRole, toggleUserStatus, resendSetupEmail, getAssignedElections, syncAssignedElections } from '@/api/adminUsers'
+import { getOrganizationsList, getElectionsList } from '@/api/roles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   UserPlus, Search, Loader2, ChevronLeft, ChevronRight,
-  Pencil, Trash2, X, Check, Mail, Send, CheckCircle2, XCircle, Clock,
+  Pencil, Trash2, X, Check, Mail, Send, CheckCircle2, XCircle, Clock, CalendarDays,
 } from 'lucide-react'
 
 function MailStatusBadge({ status }) {
@@ -43,7 +43,7 @@ function MailStatusBadge({ status }) {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const STAFF_ROLES = ['super_admin', 'org_admin', 'org_user', 'election_admin', 'election_user']
+const STAFF_ROLES = ['super_admin', 'org_admin', 'org_user', 'election_admin', 'election_user', 'moderator']
 
 const ROLE_META = {
   super_admin:    { bn: 'সুপার অ্যাডমিন',        color: 'bg-red-100 text-red-700 border-red-200' },
@@ -51,6 +51,7 @@ const ROLE_META = {
   org_user:       { bn: 'সংগঠন ব্যবহারকারী',     color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
   election_admin: { bn: 'নির্বাচন অ্যাডমিন',      color: 'bg-green-100 text-green-700 border-green-200' },
   election_user:  { bn: 'নির্বাচন ব্যবহারকারী',   color: 'bg-teal-100 text-teal-700 border-teal-200' },
+  moderator:      { bn: 'মডারেটর',                 color: 'bg-violet-100 text-violet-700 border-violet-200' },
 }
 
 function RoleBadges({ roles = [] }) {
@@ -132,11 +133,11 @@ export default function UsersPage() {
   const lastPage = meta.last_page ?? 1
 
   return (
-    <div className="p-8 space-y-6 max-w-6xl">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 w-full">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">ব্যবহারকারী ব্যবস্থাপনা</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Staff Users Management</p>
+          <p className="text-sm text-muted-foreground mt-0.5">স্টাফ ব্যবহারকারী ব্যবস্থাপনা</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2">
           <UserPlus size={16} /> নতুন ব্যবহারকারী
@@ -176,8 +177,8 @@ export default function UsersPage() {
         )}
       </div>
 
-      <div className="border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="border rounded-xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[800px]">
           <thead>
             <tr className="bg-muted/40 text-muted-foreground text-left">
               <th className="px-4 py-3 font-medium">নাম</th>
@@ -254,8 +255,10 @@ function UserRow({ user, orgs, onUpdated }) {
   const [editing,     setEditing]     = useState(false)
   const [confirm,     setConfirm]     = useState(false)
   const [emailStatus, setEmailStatus] = useState(user.setup_email_status ?? null)
+  const [showAssignElections, setShowAssignElections] = useState(false)
 
   const userRoles = user.roles ?? []
+  const isModerator = userRoles.includes('moderator')
 
   const [draft, setDraft] = useState({
     name:            user.name ?? '',
@@ -333,6 +336,7 @@ function UserRow({ user, orgs, onUpdated }) {
   const cellInput = 'border rounded px-2 py-1 text-xs bg-background w-full'
 
   return (
+    <>
     <tr className={`hover:bg-muted/20 ${editing ? 'bg-primary/5' : ''}`}>
       {/* নাম */}
       <td className="px-3 py-2">
@@ -444,6 +448,15 @@ function UserRow({ user, orgs, onUpdated }) {
                   ? <Check size={14} className="text-green-600" />
                   : <Mail size={14} />}
             </button>
+            {isModerator && (
+              <button
+                onClick={() => setShowAssignElections(true)}
+                title="নির্বাচন নির্ধারণ করুন"
+                className="text-muted-foreground hover:text-indigo-600 transition-colors"
+              >
+                <CalendarDays size={14} />
+              </button>
+            )}
             <button
               onClick={() => setConfirm(true)}
               title={user.is_active ? 'নিষ্ক্রিয় করুন' : 'সক্রিয় করুন'}
@@ -457,6 +470,118 @@ function UserRow({ user, orgs, onUpdated }) {
         )}
       </td>
     </tr>
+    {showAssignElections && (
+      <tr><td colSpan={9} className="p-0">
+        <AssignElectionsModal
+          userId={user.id}
+          userName={user.name}
+          onClose={() => setShowAssignElections(false)}
+          onUpdated={onUpdated}
+        />
+      </td></tr>
+    )}
+    </>
+  )
+}
+
+// ─── Assign Elections Modal ───────────────────────────────────────────────────
+function AssignElectionsModal({ userId, userName, onClose, onUpdated }) {
+  const qc = useQueryClient()
+  const [selected, setSelected] = useState(new Set())
+  const [loaded, setLoaded]     = useState(false)
+
+  const { data: elections = [], isLoading: electionsLoading } = useQuery({
+    queryKey: ['all-elections-list'],
+    queryFn:  () => getElectionsList().then((r) => r.data.data ?? []),
+  })
+
+  const { data: assigned, isLoading: assignedLoading } = useQuery({
+    queryKey: ['assigned-elections', userId],
+    queryFn:  () => getAssignedElections(userId).then((r) => r.data.data),
+  })
+
+  useEffect(() => {
+    if (assigned && !loaded) {
+      setSelected(new Set(assigned.election_ids ?? []))
+      setLoaded(true)
+    }
+  }, [assigned, loaded])
+
+  const syncMut = useMutation({
+    mutationFn: () => syncAssignedElections(userId, [...selected]),
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: ['assigned-elections', userId] })
+      qc.invalidateQueries({ queryKey: ['staff-users'] })
+      onUpdated()
+      onClose()
+    },
+  })
+
+  function toggle(id) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const isLoading = electionsLoading || assignedLoading
+
+  return (
+    <div className="bg-muted/40 border-b px-4 py-4">
+      <div className="max-w-xl space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-sm">
+            {userName} — নির্বাচন নির্ধারণ
+          </h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X size={16} />
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+            <Loader2 size={14} className="animate-spin" /> লোড হচ্ছে…
+          </div>
+        ) : elections.length === 0 ? (
+          <p className="text-sm text-muted-foreground">কোনো নির্বাচন পাওয়া যায়নি।</p>
+        ) : (
+          <div className="max-h-48 overflow-y-auto border rounded-lg bg-background divide-y">
+            {elections.map((el) => (
+              <label key={el.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={selected.has(el.id)}
+                  onChange={() => toggle(el.id)}
+                  className="rounded"
+                />
+                <span className="flex-1 truncate">{el.name}</span>
+                <span className="text-xs text-muted-foreground">{el.status ?? ''}</span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 pt-1">
+          <Button
+            size="sm"
+            onClick={() => syncMut.mutate()}
+            disabled={syncMut.isPending || isLoading}
+          >
+            {syncMut.isPending
+              ? <><Loader2 size={14} className="animate-spin mr-1" /> সংরক্ষণ হচ্ছে…</>
+              : <><Check size={14} className="mr-1" /> সংরক্ষণ ({selected.size})</>}
+          </Button>
+          <Button variant="outline" size="sm" onClick={onClose}>বাতিল</Button>
+          {syncMut.isError && (
+            <span className="text-xs text-destructive">
+              {syncMut.error?.response?.data?.message || 'ব্যর্থ হয়েছে'}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 

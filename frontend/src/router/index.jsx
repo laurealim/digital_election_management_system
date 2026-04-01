@@ -39,8 +39,11 @@ import VotingPage          from '@/pages/voter/VotingPage'
 import ResultsPage         from '@/pages/results/ResultsPage'
 import CandidateResultsPage from '@/pages/voter/CandidateResultsPage'
 
+// Moderator pages
+import ModeratorResetPassword from '@/pages/moderator/ResetPasswordPage'
+
 // All management roles that share the org admin layout
-const MANAGEMENT_ROLES = ['org_admin', 'org_user', 'election_admin', 'election_user']
+const MANAGEMENT_ROLES = ['org_admin', 'org_user', 'election_admin', 'election_user', 'moderator']
 
 const router = createBrowserRouter([
   // ─── Public ────────────────────────────────────────────────────────────────
@@ -72,6 +75,7 @@ const router = createBrowserRouter([
       { path: '/admin/elections/:id/edit',      element: <ElectionForm /> },
       { path: '/admin/elections/:id',           element: <ElectionDetail /> },
       { path: '/admin/elections/:id/results',   element: <ResultsPage /> },
+      { path: '/admin/reset-password',              element: <ModeratorResetPassword /> },
     ],
   },
 
@@ -91,6 +95,7 @@ const router = createBrowserRouter([
       { path: '/elections/:id/edit',     element: <ElectionForm /> },
       { path: '/elections/:id',          element: <ElectionDetail /> },
       { path: '/elections/:id/results',  element: <ResultsPage /> },
+      { path: '/reset-password-tool',        element: <ModeratorResetPassword /> },
     ],
   },
 

@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Plus, Pencil, Trash2, UserPlus, X, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
-import useAuthStore, { isSuperAdmin } from '@/store/authStore'
+import useAuthStore, { isSuperAdmin, hasPermission } from '@/store/authStore'
 
 const canEdit = (election) => ['draft', 'scheduled'].includes(election.status)
 
@@ -24,9 +24,8 @@ export default function PostsTab({ election }) {
   const isOpen      = election.candidate_mode === 'open'
 
   const superAdmin      = useAuthStore(isSuperAdmin)
-  const hasPermission   = useAuthStore((s) => s.hasPermission)
-  const canManagePosts  = superAdmin || hasPermission('manage-posts')
-  const canManageCands  = superAdmin || hasPermission('manage-candidates')
+  const canManagePosts  = superAdmin || useAuthStore(hasPermission('manage-posts'))
+  const canManageCands  = superAdmin || useAuthStore(hasPermission('manage-candidates'))
 
   const [showAddPost,  setShowAddPost]  = useState(false)
   const [editingPost,  setEditingPost]  = useState(null)
@@ -335,8 +334,8 @@ function PostModal({ election, post, onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-card border rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-card border rounded-xl shadow-xl w-full max-w-md p-5 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">{isEdit ? t('post.edit_position') : t('post.add_position')}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>

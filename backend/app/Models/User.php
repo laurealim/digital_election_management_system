@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -59,6 +60,11 @@ class User extends Authenticatable
         return $this->hasMany(Candidate::class);
     }
 
+    public function assignedElections(): BelongsToMany
+    {
+        return $this->belongsToMany(Election::class, 'moderator_election')->withTimestamps();
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     public function hasSetPassword(): bool
@@ -107,9 +113,14 @@ class User extends Authenticatable
         return $this->hasAnyRole(['super_admin', 'org_admin', 'org_user']);
     }
 
+    public function isModerator(): bool
+    {
+        return $this->hasRole('moderator');
+    }
+
     /** Any role that can manage election-level resources. */
     public function isElectionManager(): bool
     {
-        return $this->hasAnyRole(['super_admin', 'org_admin', 'org_user', 'election_admin', 'election_user']);
+        return $this->hasAnyRole(['super_admin', 'org_admin', 'org_user', 'election_admin', 'election_user', 'moderator']);
     }
 }

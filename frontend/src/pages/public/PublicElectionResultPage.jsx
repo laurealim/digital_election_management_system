@@ -92,7 +92,7 @@ export default function PublicElectionResultPage() {
 
       {/* Turnout stats */}
       <div className="max-w-4xl mx-auto px-4 -mt-5">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <TurnoutCard
             icon={<Users size={18} />}
             label="মোট ভোটার"

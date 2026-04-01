@@ -39,7 +39,8 @@ class LoginController extends ApiController
                 'id'              => $user->id,
                 'name'            => $user->name,
                 'email'           => $user->email,
-                'role'            => $user->getRoleNames()->first(),
+                'roles'           => $user->getRoleNames()->values(),
+                'permissions'     => $user->getAllPermissions()->pluck('name')->values(),
                 'organization_id' => $user->organization_id,
             ],
         ], 'Login successful.');

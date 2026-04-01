@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
-import { Vote, Shield, Users, BarChart2, CheckCircle2, Globe, ArrowRight, Building2, Zap, Lock } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { getPublicFocalPoints } from '@/api/publicResults'
+import { Vote, Shield, Users, BarChart2, CheckCircle2, Globe, ArrowRight, Building2, Zap, Lock, Phone, Headset, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 
 // ─── Feature data ─────────────────────────────────────────────────────────────
 const FEATURES = [
@@ -220,6 +223,9 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── Focal Point / Help Desk ────────────────────────────────────── */}
+      <FocalPointSection />
+
       {/* ─── CTA ─────────────────────────────────────────────────────────── */}
       <section className="py-20 px-6 bg-primary text-primary-foreground text-center">
         <div className="max-w-xl mx-auto space-y-6">
@@ -247,5 +253,127 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+  )
+}
+
+// ─── Focal Point / Help Desk Section ──────────────────────────────────────────
+function FocalPointSection() {
+  const [search, setSearch] = useState('')
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['public-focal-points'],
+    queryFn:  () => getPublicFocalPoints().then((r) => r.data.data ?? []),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const moderators = data ?? []
+  const q = search.toLowerCase().trim()
+  const filtered = moderators.filter((m) => {
+    if (!q) return true
+    return (
+      m.name?.toLowerCase().includes(q) ||
+      m.mobile?.toLowerCase().includes(q) ||
+      m.organization?.toLowerCase().includes(q)
+    )
+  })
+
+  if (!isLoading && moderators.length === 0) return null
+
+  return (
+    <section className="py-20 px-6 bg-muted/30">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary mb-4">
+            <Headset size={28} />
+          </div>
+          <h2 className="text-3xl font-bold">ফোকাল পয়েন্ট</h2>
+          <p className="text-muted-foreground mt-2">
+            ভোটদানে কোনো সমস্যা হলে নিচের মডারেটরদের সাথে যোগাযোগ করুন
+          </p>
+        </div>
+
+        {/* Search */}
+        {moderators.length > 5 && (
+          <div className="relative max-w-md mx-auto mb-6">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="নাম, মোবাইল বা সংগঠন দিয়ে খুঁজুন…"
+              className="w-full h-10 pl-9 pr-8 rounded-lg border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Loading skeleton */}
+        {isLoading && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-card border rounded-xl p-5 animate-pulse space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 bg-muted rounded w-3/4" />
+                    <div className="h-2.5 bg-muted rounded w-1/2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Cards */}
+        {!isLoading && filtered.length > 0 && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((mod, i) => (
+              <div
+                key={i}
+                className="bg-card border rounded-xl p-5 flex items-start gap-4 hover:shadow-md transition-shadow group"
+              >
+                {/* Avatar */}
+                <div className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary flex items-center justify-center text-sm font-bold">
+                  {mod.name?.charAt(0)?.toUpperCase() ?? '?'}
+                </div>
+
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="font-semibold text-sm truncate">{mod.name}</p>
+                  {mod.designation && (
+                    <p className="text-xs text-muted-foreground truncate">{mod.designation}</p>
+                  )}
+                  {mod.organization && (
+                    <p className="text-xs text-muted-foreground truncate">{mod.organization}</p>
+                  )}
+                  {mod.mobile && (
+                    <a
+                      href={`tel:${mod.mobile}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline mt-1"
+                    >
+                      <Phone size={12} /> {mod.mobile}
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* No results */}
+        {!isLoading && filtered.length === 0 && q && (
+          <p className="text-center text-muted-foreground text-sm py-6">
+            কোনো মডারেটর পাওয়া যায়নি।
+          </p>
+        )}
+      </div>
+    </section>
   )
 }

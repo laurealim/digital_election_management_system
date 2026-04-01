@@ -10,9 +10,10 @@ import { ArrowLeft, Copy, Pencil, Trash2, PlayCircle, StopCircle, XCircle, Calen
 import useBasePath from '@/hooks/useBasePath'
 import useAuthStore, { isSuperAdmin, hasPermission } from '@/store/authStore'
 
-import VotersTab  from '@/components/elections/tabs/VotersTab'
-import PostsTab   from '@/components/elections/tabs/PostsTab'
-import ResultsTab from '@/components/elections/tabs/ResultsTab'
+import VotersTab     from '@/components/elections/tabs/VotersTab'
+import PostsTab      from '@/components/elections/tabs/PostsTab'
+import ResultsTab    from '@/components/elections/tabs/ResultsTab'
+import ModeratorsTab from '@/components/elections/tabs/ModeratorsTab'
 
 const STATUS_VARIANTS = {
   draft: 'secondary', scheduled: 'warning', active: 'success',
@@ -43,6 +44,7 @@ export default function ElectionDetail() {
     { key: 'overview',  label: t('election.overview') },
     { key: 'voters',    label: t('election.voters') },
     { key: 'posts',     label: t('election.posts_candidates') },
+    ...(superAdmin || canEdit ? [{ key: 'moderators', label: t('moderator_tab.title') }] : []),
     { key: 'results',   label: t('election.results') },
   ]
 
@@ -95,12 +97,12 @@ export default function ElectionDetail() {
   }
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-4 sm:p-6 space-y-5">
       <div>
         <Link to={`${basePath}/elections`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2">
           <ArrowLeft size={14} /> {t('election.elections')}
         </Link>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">{election.name}</h1>
             <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
@@ -112,7 +114,7 @@ export default function ElectionDetail() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
             {canChangeStatus && transitions.map((s) => {
               const cfg  = TRANSITION_CONFIG[s]
               const Icon = cfg.icon
@@ -163,8 +165,8 @@ export default function ElectionDetail() {
         </div>
       </div>
 
-      <div className="border-b">
-        <nav className="flex gap-1">
+      <div className="border-b overflow-x-auto">
+        <nav className="flex gap-1 min-w-max">
           {TABS.map((tb) => (
             <button
               key={tb.key}
@@ -183,10 +185,11 @@ export default function ElectionDetail() {
       </div>
 
       <div>
-        {tab === 'overview' && <OverviewTab election={election} />}
-        {tab === 'voters'   && <VotersTab election={election} />}
-        {tab === 'posts'    && <PostsTab election={election} />}
-        {tab === 'results'  && <ResultsTab election={election} />}
+        {tab === 'overview'    && <OverviewTab election={election} />}
+        {tab === 'voters'      && <VotersTab election={election} />}
+        {tab === 'posts'       && <PostsTab election={election} />}
+        {tab === 'moderators'  && <ModeratorsTab election={election} />}
+        {tab === 'results'     && <ResultsTab election={election} />}
       </div>
     </div>
   )
@@ -195,7 +198,7 @@ export default function ElectionDetail() {
 function OverviewTab({ election }) {
   const { t } = useTranslation()
   return (
-    <div className="grid grid-cols-2 gap-4 max-w-lg text-sm">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
       <Row label={t('election.candidate_mode_label')} value={election.candidate_mode === 'open' ? t('election.candidate_mode_open') : t('election.candidate_mode_selected')} />
       <Row label={t('election.allow_multi_post')} value={election.allow_multi_post ? t('election.multi_post_allowed') : t('election.multi_post_not_allowed')} />
       <Row label={t('election.results_published_label')} value={election.is_result_published ? t('election.result_published') : t('election.result_not_published')} />

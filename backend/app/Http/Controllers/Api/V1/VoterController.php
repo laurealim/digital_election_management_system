@@ -21,7 +21,7 @@ class VoterController extends ApiController
         $this->authorize('viewAny', [Voter::class, $election]);
 
         $voters = $election->voters()
-            ->with('user:id,name,email,mobile,office_name,designation')
+            ->with(['user:id,name,email,mobile,office_name,designation', 'user.roles:id,name'])
             ->when($request->search, function ($q, $s) {
                 $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")
                     ->orWhere('email', 'like', "%{$s}%"));
@@ -292,5 +292,42 @@ class VoterController extends ApiController
         } elseif (! $shouldBeCandidate && $user->hasRole('candidate')) {
             $user->removeRole('candidate');
         }
+    }
+
+    /**
+     * POST /api/v1/elections/{election}/voters/{voter}/toggle-moderator
+     * Assign or unassign the moderator role on a voter's user.
+     */
+    public function toggleModerator(Election $election, Voter $voter): JsonResponse
+    {
+        $user = request()->user();
+
+        // Only election_admin or super_admin can assign moderators
+        if (! $user->isSuperAdmin() && ! $user->can('manage-roles')) {
+            // Fallback: election_admin within same org
+            if (! $user->isElectionAdmin() || $user->organization_id !== $election->organization_id) {
+                return $this->forbidden('You do not have permission to assign moderators.');
+            }
+        }
+
+        $voterUser = $voter->user;
+
+        if (! $voterUser) {
+            return $this->error('Voter has no associated user account.', 404);
+        }
+
+        if ($voterUser->hasRole('moderator')) {
+            $voterUser->removeRole('moderator');
+            $isModerator = false;
+        } else {
+            $voterUser->assignRole('moderator');
+            $isModerator = true;
+        }
+
+        return $this->success([
+            'voter_id'     => $voter->id,
+            'user_id'      => $voterUser->id,
+            'is_moderator' => $isModerator,
+        ], $isModerator ? 'Moderator role assigned.' : 'Moderator role removed.');
     }
 }

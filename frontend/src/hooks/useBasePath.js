@@ -1,6 +1,6 @@
 import useAuthStore from '@/store/authStore'
 
-const MANAGEMENT_ROLES = ['org_admin', 'org_user', 'election_admin', 'election_user']
+const MANAGEMENT_ROLES = ['org_admin', 'org_user', 'election_admin', 'election_user', 'moderator']
 
 /**
  * Returns the base path prefix for the current user's highest-priority role.

@@ -5,3 +5,6 @@ export const getPublicResults  = (page = 1) =>
 
 export const getPublicElectionResult = (id) =>
   api.get(`/public/results/${id}`)
+
+export const getPublicFocalPoints = () =>
+  api.get('/public/focal-points')

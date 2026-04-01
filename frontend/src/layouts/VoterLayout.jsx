@@ -22,9 +22,9 @@ export default function VoterLayout() {
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Top nav bar */}
-      <header className="bg-card border-b px-6 py-3 flex items-center justify-between">
+      <header className="bg-card border-b px-4 sm:px-6 py-3 flex items-center justify-between">
         <span className="text-lg font-bold text-primary">DEMS</span>
-        <nav className="flex items-center gap-6">
+        <nav className="flex items-center gap-4 sm:gap-6">
           <NavLink
             to="/voter/dashboard"
             className={({ isActive }) =>
@@ -34,7 +34,7 @@ export default function VoterLayout() {
             {t('nav.my_elections')}
           </NavLink>
         </nav>
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-2 sm:gap-3 text-sm">
           <span className="text-muted-foreground hidden sm:inline">{user?.name}</span>
           <LanguageSwitcher />
           <button onClick={handleLogout} className="text-destructive hover:underline text-xs">
@@ -43,7 +43,7 @@ export default function VoterLayout() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Outlet />
       </main>
     </div>

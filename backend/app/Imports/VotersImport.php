@@ -121,8 +121,8 @@ class VotersImport implements ToCollection, WithHeadingRow
                         'organization_id' => $orgId,
                     ]);
 
-                    SendVoterInvitationJob::dispatch($user, $this->election, $voter)
-                        ->onQueue('emails');
+                    // SendVoterInvitationJob::dispatch($user, $this->election, $voter)
+                    //     ->onQueue('emails');
                 });
 
                 $this->importedCount++;

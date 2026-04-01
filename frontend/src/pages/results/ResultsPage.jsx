@@ -55,7 +55,7 @@ export default function ResultsPage() {
     const status = error.response?.status
     if (status === 403) {
       return (
-        <div className="max-w-lg mx-auto py-12 text-center space-y-3">
+        <div className="w-full max-w-lg mx-auto py-12 text-center space-y-3 px-4 sm:px-0">
           <p className="text-sm text-muted-foreground">{t('results.not_published')}</p>
           <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
             <ChevronLeft size={14} className="mr-1" /> {t('common.back')}
@@ -72,7 +72,7 @@ export default function ResultsPage() {
 
   if (!election.is_result_published && !isAdmin) {
     return (
-      <div className="max-w-lg mx-auto py-12 text-center space-y-3">
+      <div className="w-full max-w-lg mx-auto py-12 text-center space-y-3 px-4 sm:px-0">
         <p className="text-sm text-muted-foreground">{t('results.not_published')}</p>
         <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
           <ChevronLeft size={14} className="mr-1" /> {t('common.back')}
@@ -115,7 +115,7 @@ export default function ResultsPage() {
       </div>
 
       {/* Turnout summary */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label={t('results.total_voters')} value={turnout.total_voters} />
         <StatCard label={t('results.votes_cast')}   value={turnout.voted_count} />
         <StatCard
@@ -199,8 +199,8 @@ function PostResultCard({ post, t }) {
         )}
 
         {/* Candidate table */}
-        <div className="border rounded-lg overflow-hidden text-sm">
-          <table className="w-full">
+        <div className="border rounded-lg overflow-x-auto text-sm">
+          <table className="w-full min-w-[500px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left px-4 py-2 font-medium">{t('results.candidate')}</th>

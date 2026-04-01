@@ -60,10 +60,29 @@ class RolesAndPermissionsSeeder extends Seeder
         $superAdmin = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
         $superAdmin->syncPermissions(Permission::all());
 
-        // ─── Org Admin — full control within their org ────────────────────────
+        // ─── Org Admin — view elections/voters, view + export results, reports ─
         $orgAdmin = Role::firstOrCreate(['name' => 'org_admin', 'guard_name' => 'web']);
         $orgAdmin->syncPermissions([
             'view-organizations',
+            'view-elections',
+            'view-voters',
+            'view-results',
+            'export-results',
+            'view-detailed-reports',
+        ]);
+
+        // ─── Org User — view elections/voters, view results, reports ──────────
+        $orgUser = Role::firstOrCreate(['name' => 'org_user', 'guard_name' => 'web']);
+        $orgUser->syncPermissions([
+            'view-elections',
+            'view-voters',
+            'view-results',
+            'view-detailed-reports',
+        ]);
+
+        // ─── Election Admin — full election CRUD, voters, posts, candidates ───
+        $electionAdmin = Role::firstOrCreate(['name' => 'election_admin', 'guard_name' => 'web']);
+        $electionAdmin->syncPermissions([
             'create-elections',
             'edit-elections',
             'delete-elections',
@@ -76,64 +95,47 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-results',
             'export-results',
             'view-detailed-reports',
-            'view-audit-logs',
             'send-reset-password',
         ]);
 
-        // ─── Org User — add/edit elections, manage voters, view results ───────
-        $orgUser = Role::firstOrCreate(['name' => 'org_user', 'guard_name' => 'web']);
-        $orgUser->syncPermissions([
+        // ─── Election User — create/edit elections, manage voters/posts/candidates, view results ─
+        $electionUser = Role::firstOrCreate(['name' => 'election_user', 'guard_name' => 'web']);
+        $electionUser->syncPermissions([
             'create-elections',
             'edit-elections',
             'view-elections',
             'manage-voters',
             'view-voters',
-            'view-results',
-            'export-results',
-            'view-detailed-reports',
-            'send-reset-password',
-        ]);
-
-        // ─── Election Admin — manage voters/posts/candidates for elections ────
-        $electionAdmin = Role::firstOrCreate(['name' => 'election_admin', 'guard_name' => 'web']);
-        $electionAdmin->syncPermissions([
-            'view-elections',
-            'manage-voters',
-            'delete-voters',
-            'view-voters',
             'manage-candidates',
             'manage-posts',
             'view-results',
             'export-results',
-            'view-detailed-reports',
-            'send-reset-password',
         ]);
 
-        // ─── Election User — add/edit/import voters, view results ─────────────
-        $electionUser = Role::firstOrCreate(['name' => 'election_user', 'guard_name' => 'web']);
-        $electionUser->syncPermissions([
-            'view-elections',
-            'manage-voters',
+        // ─── Moderator — view/edit voters, send invitations, password reset ───
+        $moderator = Role::firstOrCreate(['name' => 'moderator', 'guard_name' => 'web']);
+        $moderator->syncPermissions([
             'view-voters',
-            'view-results',
-            'export-results',
+            'manage-voters',
             'send-reset-password',
         ]);
 
-        // ─── Voter — cast vote and view results ───────────────────────────────
+        // ─── Voter — cast vote, view + export results ────────────────────────
         $voter = Role::firstOrCreate(['name' => 'voter', 'guard_name' => 'web']);
         $voter->syncPermissions([
             'cast-vote',
             'view-voting-status',
             'view-results',
+            'export-results',
         ]);
 
-        // ─── Candidate — vote + view results + own candidate result ──────────
+        // ─── Candidate — vote + view/export results + own candidate result ───
         $candidate = Role::firstOrCreate(['name' => 'candidate', 'guard_name' => 'web']);
         $candidate->syncPermissions([
             'cast-vote',
             'view-voting-status',
             'view-results',
+            'export-results',
             'view-own-candidate-results',
         ]);
     }

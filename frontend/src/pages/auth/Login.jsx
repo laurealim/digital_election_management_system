@@ -32,7 +32,7 @@ export default function Login() {
       setAuth(user, token)
 
       const roles     = user.roles ?? []
-      const mgmtRoles = ['org_admin', 'org_user', 'election_admin', 'election_user']
+      const mgmtRoles = ['org_admin', 'org_user', 'election_admin', 'election_user', 'moderator']
       if (roles.includes('super_admin'))                    navigate('/admin/dashboard', { replace: true })
       else if (roles.some((r) => mgmtRoles.includes(r)))   navigate('/dashboard', { replace: true })
       else                                                  navigate('/voter/dashboard', { replace: true })

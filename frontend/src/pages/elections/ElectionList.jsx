@@ -67,7 +67,7 @@ export default function ElectionList() {
   }
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-4 sm:p-6 space-y-4 w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t('election.elections')}</h1>
         {(superAdmin || canCreate) && (
@@ -99,8 +99,8 @@ export default function ElectionList() {
       {isLoading ? (
         <p className="text-muted-foreground text-sm">{t('common.loading')}</p>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="border rounded-lg overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left px-4 py-3 font-medium">{t('election.title')}</th>

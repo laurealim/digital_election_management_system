@@ -230,7 +230,10 @@
     "select_badge": "বাছাই করুন",
     "posts_done": "পদ সম্পন্ন",
     "next_post": "পরবর্তী পদ",
-    "selected_elsewhere": "অন্য পদে নির্বাচিত"
+    "selected_elsewhere": "অন্য পদে নির্বাচিত",
+    "candidate_list": "প্রার্থী তালিকা",
+    "search_candidate": "নাম বা ইমেইল দিয়ে খুঁজুন",
+    "candidates_count_label": "জন প্রার্থী"
   },
   "results": {
     "title": "নির্বাচনী ফলাফল",
@@ -327,5 +330,27 @@
     "password_reset_done": "পাসওয়ার্ড রিসেট হয়েছে! লগইন করুন।",
     "invalid_token": "অবৈধ বা মেয়াদোত্তীর্ণ লিঙ্ক। নতুন লিঙ্কের জন্য অনুরোধ করুন।",
     "request_new_link": "নতুন লিঙ্কের জন্য অনুরোধ করুন"
+  },
+  "moderator": {
+    "reset_password": "পাসওয়ার্ড রিসেট",
+    "select_election": "নির্বাচন নির্বাচন করুন",
+    "choose_election": "-- একটি নির্বাচন বেছে নিন --",
+    "select_voter": "ভোটার অনুসন্ধান ও নির্বাচন",
+    "search_voter_placeholder": "নাম, ইমেইল বা মোবাইল দিয়ে খুঁজুন...",
+    "no_voters_found": "কোনো ভোটার পাওয়া যায়নি।",
+    "voter_info": "ভোটার তথ্য",
+    "generate_reset_link": "রিসেট লিঙ্ক তৈরি করুন",
+    "reset_link_generated": "রিসেট লিঙ্ক তৈরি হয়েছে",
+    "link_for_voter": "পাসওয়ার্ড রিসেট লিঙ্ক:",
+    "reset_link_label": "পাসওয়ার্ড রিসেট লিঙ্ক",
+    "link_warning": "এই লিঙ্কটি ৬০ মিনিট কার্যকর থাকবে। ভোটারকে নিরাপদে শেয়ার করুন। কোনো ইমেইল পাঠানো হবে না।"
+  },
+  "moderator_tab": {
+    "title": "মডারেটর",
+    "moderator": "মডারেটর",
+    "moderators": "মডারেটর",
+    "voter_only": "ভোটার",
+    "assign": "মডারেটর নিযুক্ত করুন",
+    "unassign": "মডারেটর সরান"
   }
 }

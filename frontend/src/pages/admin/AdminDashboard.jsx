@@ -40,7 +40,7 @@ export default function AdminDashboard() {
   }))
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 w-full">
       <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
                   <tr key={log.id} className="border-t">
                     <td className="px-4 py-2 font-mono text-xs">{log.event}</td>
                     <td className="px-4 py-2 text-muted-foreground text-xs">
-                      {log.organization?.name ?? `Org #${log.organization_id}`}
+                      {log.organization?.name ?? `সংগঠন #${log.organization_id}`}
                     </td>
                     <td className="px-4 py-2 text-muted-foreground text-xs font-mono">{log.ip_address}</td>
                     <td className="px-4 py-2 text-muted-foreground text-xs">

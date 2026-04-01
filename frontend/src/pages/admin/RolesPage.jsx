@@ -19,6 +19,7 @@ const ROLE_LABELS = {
   election_user:   { bn: 'নির্বাচন ব্যবহারকারী',   color: 'bg-teal-100 text-teal-700' },
   voter:           { bn: 'ভোটার',                 color: 'bg-blue-100 text-blue-700' },
   candidate:       { bn: 'প্রার্থী',               color: 'bg-purple-100 text-purple-700' },
+  moderator:       { bn: 'মডারেটর',                 color: 'bg-violet-100 text-violet-700' },
 }
 
 const PERM_LABELS = {
@@ -64,12 +65,12 @@ export default function RolesPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 max-w-6xl">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 w-full">
       <div className="flex items-center gap-3">
         <ShieldCheck size={24} className="text-primary" />
         <div>
           <h1 className="text-2xl font-bold">ভূমিকা ও অনুমতি</h1>
-          <p className="text-sm text-muted-foreground">Roles & Permissions Management</p>
+          <p className="text-sm text-muted-foreground">ভূমিকা ও অনুমতি ব্যবস্থাপনা</p>
         </div>
       </div>
 
@@ -294,8 +295,8 @@ function VotersTab({ isSuperAdmin }) {
               <Loader2 size={16} className="animate-spin" /> লোড হচ্ছে…
             </div>
           ) : (
-            <div className="border rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="border rounded-xl overflow-x-auto">
+              <table className="w-full text-sm min-w-[700px]">
                 <thead>
                   <tr className="bg-muted/40 text-muted-foreground text-left">
                     <th className="px-4 py-3 font-medium">নাম</th>
@@ -425,7 +426,7 @@ function VoterRow({ voter }) {
 }
 
 // ─── Staff Tab ────────────────────────────────────────────────────────────────
-const STAFF_ROLES = ['org_admin', 'org_user', 'election_admin', 'election_user']
+const STAFF_ROLES = ['org_admin', 'org_user', 'election_admin', 'election_user', 'moderator']
 
 function StaffTab() {
   const qc = useQueryClient()
@@ -488,8 +489,8 @@ function StaffTab() {
       </div>
 
       {/* Table */}
-      <div className="border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="border rounded-xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[800px]">
           <thead>
             <tr className="bg-muted/40 text-muted-foreground text-left">
               <th className="px-4 py-3 font-medium">নাম</th>

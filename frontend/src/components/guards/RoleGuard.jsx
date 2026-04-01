@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import useAuthStore from '@/store/authStore'
 
-const MANAGEMENT_ROLES = ['org_admin', 'org_user', 'election_admin', 'election_user']
+const MANAGEMENT_ROLES = ['org_admin', 'org_user', 'election_admin', 'election_user', 'moderator']
 
 function defaultRedirect(roles = []) {
   if (roles.includes('super_admin'))                       return '/admin/dashboard'

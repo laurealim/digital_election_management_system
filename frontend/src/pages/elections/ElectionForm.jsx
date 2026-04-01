@@ -125,7 +125,7 @@ export default function ElectionForm() {
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 w-full max-w-3xl">
       <div className="mb-6">
         <Link to={`${basePath}/elections`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft size={14} /> {t('election.back_to_elections')}
@@ -173,7 +173,7 @@ export default function ElectionForm() {
               <FieldError name="election_date" />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="voting_start_time">{t('election.voting_start')} *</Label>
                 <Input

@@ -157,7 +157,7 @@ export default function RegisterOrganization() {
                   <FieldError name="email" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="org_phone">ফোন নম্বর</Label>
                     <Input id="org_phone" value={form.org_phone} onChange={set('org_phone')} />
@@ -189,7 +189,7 @@ export default function RegisterOrganization() {
                   <FieldError name="admin_email" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="admin_mobile">মোবাইল</Label>
                     <Input id="admin_mobile" value={form.admin_mobile} onChange={set('admin_mobile')} />

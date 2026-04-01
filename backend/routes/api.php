@@ -19,7 +19,9 @@ use App\Http\Controllers\Api\V1\Admin\RolesController;
 use App\Http\Controllers\Api\V1\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\PublicResultController;
+use App\Http\Controllers\Api\V1\PublicFocalPointController;
 use App\Http\Controllers\Api\V1\ResendWebhookController;
+use App\Http\Controllers\Api\V1\ModeratorResetPasswordController;
 
 Route::prefix('v1')->group(function () {
 
@@ -34,6 +36,7 @@ Route::prefix('v1')->group(function () {
     // ─── Public Results (no auth) ─────────────────────────────────────────────
     Route::get('public/results',      [PublicResultController::class, 'index']);
     Route::get('public/results/{id}', [PublicResultController::class, 'show']);
+    Route::get('public/focal-points', [PublicFocalPointController::class, 'index']);
 
     // ─── Resend Webhook (no auth — Resend calls this) ─────────────────────────
     Route::post('webhooks/resend', [ResendWebhookController::class, 'handle']);
@@ -74,6 +77,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('voters/{voter}',               [VoterController::class, 'destroy']);
             Route::post('voters/{voter}/resend-invitation',[VoterController::class, 'resendInvitation']);
             Route::post('voters/send-invitations',         [VoterController::class, 'sendBulkInvitations']);
+            Route::post('voters/{voter}/toggle-moderator', [VoterController::class, 'toggleModerator']);
         });
 
         // Posts (positions) — nested under elections
@@ -122,6 +126,8 @@ Route::prefix('v1')->group(function () {
             Route::patch('users/{user}/toggle-status',      [AdminUserController::class, 'toggleStatus']);
             Route::post('users/{user}/resend-setup',        [AdminUserController::class, 'resendSetupEmail']);
             Route::delete('users/{user}',                   [AdminUserController::class, 'destroy']);
+            Route::get('users/{user}/assigned-elections',    [AdminUserController::class, 'assignedElections']);
+            Route::put('users/{user}/assigned-elections',    [AdminUserController::class, 'syncAssignedElections']);
         });
 
         // ─── Voter-with-roles management (any user with view-voters permission) ─
@@ -130,6 +136,14 @@ Route::prefix('v1')->group(function () {
             Route::put('admin/users/{user}/roles',          [RolesController::class, 'syncRoles']);
             Route::get('admin/organizations-list',          [RolesController::class, 'organizationsList']);
             Route::get('admin/elections-list',              [RolesController::class, 'electionsList']);
+        });
+
+        // ─── Moderator Password Reset (moderator + super_admin) ──────────────
+        Route::prefix('moderator')->middleware('permission:send-reset-password')->group(function () {
+            Route::get('elections',                              [ModeratorResetPasswordController::class, 'elections']);
+            Route::get('elections/{election}/voters',            [ModeratorResetPasswordController::class, 'voters']);
+            Route::put('voters/{voter}',                        [ModeratorResetPasswordController::class, 'updateVoter']);
+            Route::post('voters/{voter}/generate-reset-link',   [ModeratorResetPasswordController::class, 'generateResetLink']);
         });
     });
 });

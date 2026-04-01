@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { UserPlus, Upload, Trash2, Mail, X, Copy, Pencil, Download, Send, Users, CheckCircle2, XCircle, Clock } from 'lucide-react'
-import useAuthStore, { isSuperAdmin } from '@/store/authStore'
+import useAuthStore, { isSuperAdmin, hasPermission } from '@/store/authStore'
 
 function MailStatusBadge({ status, sentAt }) {
   if (status === 'sent') {
@@ -57,9 +57,8 @@ export default function VotersTab({ election }) {
   const editable    = canEdit(election)
 
   const superAdmin    = useAuthStore(isSuperAdmin)
-  const hasPermission = useAuthStore((s) => s.hasPermission)
-  const canManage     = superAdmin || hasPermission('manage-voters')
-  const canDelete     = superAdmin || hasPermission('delete-voters')
+  const canManage     = superAdmin || useAuthStore(hasPermission('manage-voters'))
+  const canDelete     = superAdmin || useAuthStore(hasPermission('delete-voters'))
 
   const [search,        setSearch]        = useState('')
   const [page,          setPage]          = useState(1)
@@ -302,8 +301,8 @@ export default function VotersTab({ election }) {
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="border rounded-lg overflow-x-auto">
+          <table className="w-full text-sm min-w-[900px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="px-4 py-3 w-10">
@@ -561,8 +560,8 @@ function AddVoterModal({ election, onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-card border rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-card border rounded-xl shadow-xl w-full max-w-md p-5 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t('voter.add_voter_title')}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
@@ -579,7 +578,7 @@ function AddVoterModal({ election, onClose, onSuccess }) {
             <Input id="v_email" type="email" value={form.email} onChange={set('email')} required />
             <FieldError name="email" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="v_mobile">{t('voter.mobile')}</Label>
               <Input id="v_mobile" value={form.mobile} onChange={set('mobile')} />
@@ -640,8 +639,8 @@ function EditVoterModal({ election, voter, onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-card border rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-card border rounded-xl shadow-xl w-full max-w-md p-5 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t('voter.edit_voter_title')}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
@@ -658,7 +657,7 @@ function EditVoterModal({ election, voter, onClose, onSuccess }) {
             <Input id="ev_email" type="email" value={voter.user?.email ?? ''} disabled className="bg-muted" />
             <p className="text-xs text-muted-foreground mt-1">{t('voter.email_cannot_change')}</p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="ev_mobile">{t('voter.mobile')}</Label>
               <Input id="ev_mobile" value={form.mobile} onChange={set('mobile')} />
@@ -699,8 +698,8 @@ function CopyFromModal({ election, onClose, onCopy, copying }) {
   })
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-card border rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-card border rounded-xl shadow-xl w-full max-w-md p-5 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t('voter.copy_voters_title')}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
