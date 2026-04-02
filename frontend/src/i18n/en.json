@@ -123,7 +123,12 @@
     "export_pdf": "Export PDF",
     "export_excel": "Export Excel",
     "not_published": "Results not yet published",
-    "my_results": "My Vote Results"
+    "my_results": "My Vote Results",
+    "top_n": "Top {{count}}",
+    "all_winners": "All Winners",
+    "post": "Post",
+    "detailed_results": "Detailed Results by Post",
+    "details_label": "Table"
   },
   "roles": {
     "title": "Roles & Permissions",

@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\V1\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\PublicResultController;
 use App\Http\Controllers\Api\V1\PublicFocalPointController;
+use App\Http\Controllers\Api\V1\PublicVoterListController;
 use App\Http\Controllers\Api\V1\ResendWebhookController;
 use App\Http\Controllers\Api\V1\ModeratorResetPasswordController;
 
@@ -37,6 +38,8 @@ Route::prefix('v1')->group(function () {
     Route::get('public/results',      [PublicResultController::class, 'index']);
     Route::get('public/results/{id}', [PublicResultController::class, 'show']);
     Route::get('public/focal-points', [PublicFocalPointController::class, 'index']);
+    Route::get('public/voter-list',      [PublicVoterListController::class, 'index']);
+    Route::get('public/voter-list/{id}', [PublicVoterListController::class, 'show']);
 
     // ─── Resend Webhook (no auth — Resend calls this) ─────────────────────────
     Route::post('webhooks/resend', [ResendWebhookController::class, 'handle']);
@@ -65,6 +68,7 @@ Route::prefix('v1')->group(function () {
         Route::post('elections/{election}/duplicate',      [ElectionController::class, 'duplicate']);
         Route::patch('elections/{election}/status',        [ElectionController::class, 'updateStatus']);
         Route::patch('elections/{election}/public-result', [ElectionController::class, 'togglePublicResult']);
+        Route::patch('elections/{election}/public-voter-list', [ElectionController::class, 'togglePublicVoterList']);
 
         // Voters (nested under elections)
         Route::prefix('elections/{election}')->group(function () {

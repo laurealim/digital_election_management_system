@@ -20,6 +20,7 @@ import LandingPage              from '@/pages/public/LandingPage'
 import RegisterOrganization     from '@/pages/public/RegisterOrganization'
 import PublicResultsListPage    from '@/pages/public/PublicResultsListPage'
 import PublicElectionResultPage from '@/pages/public/PublicElectionResultPage'
+import PublicVoterListPage     from '@/pages/public/PublicVoterListPage'
 
 // Super admin pages
 import AdminOrganizations from '@/pages/admin/Organizations'
@@ -50,6 +51,7 @@ const router = createBrowserRouter([
   { path: '/',                 element: <LandingPage /> },
   { path: '/results',          element: <PublicResultsListPage /> },
   { path: '/results/:id',      element: <PublicElectionResultPage /> },
+  { path: '/voter-list',         element: <PublicVoterListPage /> },
   { path: '/login',            element: <Login /> },
   { path: '/forgot-password',  element: <ForgotPassword /> },
   { path: '/reset-password',   element: <ResetPassword /> },

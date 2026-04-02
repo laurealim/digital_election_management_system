@@ -23,3 +23,6 @@ export const duplicateElection = (id) =>
 
 export const togglePublicResult = (id) =>
   api.patch(`/elections/${id}/public-result`)
+
+export const togglePublicVoterList = (id) =>
+  api.patch(`/elections/${id}/public-voter-list`)

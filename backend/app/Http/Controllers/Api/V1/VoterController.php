@@ -82,8 +82,8 @@ class VoterController extends ApiController
             ]);
 
             // Dispatch invitation email
-            // SendVoterInvitationJob::dispatch($user, $election, $voter)
-            //     ->onQueue('emails');
+            SendVoterInvitationJob::dispatch($user, $election, $voter)
+                ->onQueue('emails');
 
             return $voter->load('user:id,name,email,mobile,office_name,designation');
         });

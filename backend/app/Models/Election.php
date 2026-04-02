@@ -23,17 +23,19 @@ class Election extends \App\Models\TenantModel
         'allow_multi_post',
         'is_result_published',
         'is_public_result',
+        'is_public_voter_list',
         'completed_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'election_date'        => 'date',
-            'allow_multi_post'     => 'boolean',
-            'is_result_published'  => 'boolean',
-            'is_public_result'     => 'boolean',
-            'completed_at'         => 'datetime',
+            'election_date'          => 'date',
+            'allow_multi_post'       => 'boolean',
+            'is_result_published'    => 'boolean',
+            'is_public_result'       => 'boolean',
+            'is_public_voter_list'   => 'boolean',
+            'completed_at'           => 'datetime',
         ];
     }
 

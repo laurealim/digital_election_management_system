@@ -181,6 +181,24 @@ class ElectionController extends ApiController
         );
     }
 
+    /**
+     * PATCH /elections/{election}/public-voter-list
+     * Toggle whether this election's voter list appears on the public landing page.
+     */
+    public function togglePublicVoterList(Election $election): JsonResponse
+    {
+        $this->authorize('togglePublicResult', $election);
+
+        $election->update(['is_public_voter_list' => ! $election->is_public_voter_list]);
+
+        return $this->success(
+            $election->fresh(),
+            $election->is_public_voter_list
+                ? 'Voter list is now publicly visible.'
+                : 'Voter list is no longer publicly visible.'
+        );
+    }
+
     private function allowedTransitions(string $current): array
     {
         return match ($current) {

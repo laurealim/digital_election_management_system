@@ -2,10 +2,10 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import { BarChart2, Globe, GlobeLock, Loader2 } from 'lucide-react'
+import { BarChart2, Globe, GlobeLock, Loader2, Users } from 'lucide-react'
 import useBasePath from '@/hooks/useBasePath'
 import useAuthStore, { isSuperAdmin, hasPermission } from '@/store/authStore'
-import { togglePublicResult } from '@/api/elections'
+import { togglePublicResult, togglePublicVoterList } from '@/api/elections'
 
 export default function ResultsTab({ election }) {
   const navigate     = useNavigate()
@@ -18,6 +18,11 @@ export default function ResultsTab({ election }) {
 
   const toggleMutation = useMutation({
     mutationFn: () => togglePublicResult(election.id),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['election', String(election.id)] }),
+  })
+
+  const toggleVoterListMutation = useMutation({
+    mutationFn: () => togglePublicVoterList(election.id),
     onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['election', String(election.id)] }),
   })
 
@@ -75,6 +80,36 @@ export default function ResultsTab({ election }) {
             {toggleMutation.isPending
               ? <Loader2 size={13} className="animate-spin" />
               : election.is_public_result ? t('results.make_private') : t('results.publish_publicly')}
+          </Button>
+        </div>
+      )}
+
+      {/* Public voter list toggle */}
+      {canToggle && (
+        <div className="flex items-center justify-between rounded-xl border px-4 py-3 bg-card">
+          <div className="flex items-start gap-3">
+            <div className={`mt-0.5 p-1.5 rounded-lg ${election.is_public_voter_list ? 'bg-teal-100 text-teal-600' : 'bg-muted text-muted-foreground'}`}>
+              <Users size={15} />
+            </div>
+            <div>
+              <p className="text-sm font-medium">সদস্য তালিকা (পাবলিক)</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {election.is_public_voter_list
+                  ? 'সদস্য তালিকা ল্যান্ডিং পেজে দেখা যাচ্ছে'
+                  : 'সদস্য তালিকা পাবলিক পেজে দেখা যাচ্ছে না'}
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant={election.is_public_voter_list ? 'destructive' : 'outline'}
+            onClick={() => toggleVoterListMutation.mutate()}
+            disabled={toggleVoterListMutation.isPending}
+            className="shrink-0 ml-3"
+          >
+            {toggleVoterListMutation.isPending
+              ? <Loader2 size={13} className="animate-spin" />
+              : election.is_public_voter_list ? 'গোপন করুন' : 'প্রকাশ করুন'}
           </Button>
         </div>
       )}
