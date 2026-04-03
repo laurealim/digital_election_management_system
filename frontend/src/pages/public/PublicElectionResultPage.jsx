@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getPublicElectionResult } from '@/api/publicResults'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Trophy, Users, CheckCircle2, BarChart2, Loader2 } from 'lucide-react'
+import { ArrowLeft, Trophy, Users, CheckCircle2, BarChart2, Loader2, Award } from 'lucide-react'
 
 const COLORS = [
   'from-indigo-500 to-indigo-600',
@@ -123,6 +123,11 @@ export default function PublicElectionResultPage() {
         </div>
       </div>
 
+      {/* All winners summary */}
+      {/* <div className="max-w-4xl mx-auto px-4 pt-8">
+        <AllWinnersSummary posts={posts} />
+      </div> */}
+
       {/* Posts */}
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         {posts.map((post, pi) => (
@@ -136,6 +141,70 @@ export default function PublicElectionResultPage() {
           DEMS — Digital Election Management System
         </p>
       </footer>
+    </div>
+  )
+}
+
+// ─── All winners summary table ────────────────────────────────────────────────
+function AllWinnersSummary({ posts }) {
+  const allWinners = posts.flatMap((post) =>
+    post.winners.map((w) => ({
+      postTitle:   post.title,
+      name:        w.user.name,
+      designation: w.user.designation,
+      votes:       w.vote_count,
+      totalVotes:  post.total_votes,
+      pctValue:    post.total_votes > 0 ? ((w.vote_count / post.total_votes) * 100).toFixed(1) : '0.0',
+    }))
+  )
+
+  if (allWinners.length === 0) return null
+
+  return (
+    <div className="bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-800/60 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-amber-50 via-amber-50/60 to-transparent dark:from-amber-950/40 dark:via-amber-950/20 dark:to-transparent border-b border-amber-200/60 dark:border-amber-800/30 px-6 py-4 flex items-center gap-3">
+        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 shadow-sm">
+          <Award size={18} className="text-amber-600 dark:text-amber-400" />
+        </div>
+        <div>
+          <h2 className="font-bold text-base">সকল পদের বিজয়ী</h2>
+          <p className="text-xs text-muted-foreground">{allWinners.length} বিজয়ী · {posts.length} পদ</p>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[480px]">
+          <thead className="bg-muted/50">
+            <tr>
+              <th className="text-left px-5 py-2.5 font-medium">পদ</th>
+              <th className="text-left px-5 py-2.5 font-medium">বিজয়ী</th>
+              <th className="text-right px-5 py-2.5 font-medium">ভোট</th>
+              <th className="text-right px-5 py-2.5 font-medium">অংশ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allWinners.map((w, i) => (
+              <tr key={i} className="border-t hover:bg-amber-50/40 dark:hover:bg-amber-950/10 transition-colors">
+                <td className="px-5 py-3 font-medium">{w.postTitle}</td>
+                <td className="px-5 py-3">
+                  <div className="flex items-center gap-2">
+                    <Trophy size={13} className="text-amber-500 shrink-0" />
+                    <div>
+                      <p className="font-medium">{w.name}</p>
+                      {w.designation && <p className="text-xs text-muted-foreground">{w.designation}</p>}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-5 py-3 text-right tabular-nums font-semibold">{w.votes}</td>
+                <td className="px-5 py-3 text-right">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                    {w.pctValue}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -177,7 +246,7 @@ function PostResultSection({ post, index }) {
 
       <div className="p-6 space-y-6">
         {/* Winner(s) */}
-        {winners.length > 0 && (
+        {/* {winners.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-amber-600 uppercase tracking-widest mb-3 flex items-center gap-1.5">
               <Trophy size={13} /> বিজয়ী
@@ -188,7 +257,7 @@ function PostResultSection({ post, index }) {
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Candidates */}
         <div>
@@ -257,9 +326,9 @@ function CandidateBar({ candidate, isWinner, total, maxVote, colorClass }) {
                 · {candidate.user.designation}
               </p>
             )}
-            {isWinner && (
+            {/* {isWinner && (
               <Trophy size={12} className="text-amber-500 shrink-0" />
-            )}
+            )} */}
           </div>
           <div className="text-right shrink-0 ml-3">
             <span className="text-sm font-bold tabular-nums">{candidate.vote_count}</span>

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getPublicFocalPoints } from '@/api/publicResults'
-import { Vote, Shield, Users, BarChart2, CheckCircle2, Globe, ArrowRight, Building2, Zap, Lock, Phone, Headset, Search, X } from 'lucide-react'
+import { Vote, Shield, Users, BarChart2, CheckCircle2, Globe, ArrowRight, Building2, Zap, Lock, Phone, Headset, Search, X, FileDown, Eye, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 
@@ -78,12 +78,15 @@ export default function LandingPage() {
           <Link to="/results" className="text-sm text-muted-foreground hover:text-foreground hidden sm:inline">
             ফলাফল
           </Link>
+          <Link to="/voter-list" className="text-sm text-muted-foreground hover:text-foreground hidden sm:inline">
+            সদস্য তালিকা
+          </Link>
           <Link to="/login">
             <Button variant="ghost" size="sm">লগইন</Button>
           </Link>
-          <Link to="/register">
+          {/* <Link to="/register">
             <Button size="sm">নিবন্ধন করুন</Button>
-          </Link>
+          </Link> */}
         </div>
       </header>
 
@@ -99,9 +102,9 @@ export default function LandingPage() {
             বাংলাদেশের জন্য নির্মিত নিরাপদ ডিজিটাল নির্বাচন
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-            ডিজিটাল নির্বাচন{' '}
-            <span className="text-primary">ব্যবস্থাপনা সিস্টেম</span>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight ">
+            আইসিটি  অধিদপ্তর অফিসার্স এসোসিয়েশন (DOA) এর{' '}<br></br>
+            <span className="text-primary text-2xl sm:text-3xl">এড-হক কমিটির নির্বাচন-২০২৬</span>
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
@@ -110,27 +113,58 @@ export default function LandingPage() {
 
           <div className="flex flex-wrap gap-3 justify-center pt-2">
             <Link to="/register">
-              <Button size="lg" className="gap-2">
+              {/* <Button size="lg" className="gap-2">
                 বিনামূল্যে শুরু করুন <ArrowRight size={16} />
-              </Button>
+              </Button> */}
             </Link>
             <Link to="/login">
               <Button size="lg" variant="outline">আমার অ্যাকাউন্টে প্রবেশ করুন</Button>
             </Link>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-6 pt-4 text-sm text-muted-foreground">
+          {/* <div className="flex flex-wrap justify-center gap-6 pt-4 text-sm text-muted-foreground">
             {['নিরাপদ ও এনক্রিপ্টেড', 'রিয়েলটাইম ফলাফল', 'বাংলা সমর্থন'].map((t) => (
               <span key={t} className="flex items-center gap-1.5">
                 <CheckCircle2 size={14} className="text-primary" /> {t}
               </span>
             ))}
+          </div> */}
+        </div>
+      </section>
+
+      {/* ─── Constitution of DOA ─────────────────────────────────────────────────── */}
+      <section className="py-5 px-6 bg-muted/30">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary mb-4">
+              <BookOpen size={28} />
+            </div>
+            <h2 className="text-3xl font-bold">গঠনতন্ত্র</h2>
+            <p className="text-muted-foreground mt-2">আইসিটি  অধিদপ্তর অফিসার্স এসোসিয়েশন (DOA)</p>
+          </div>
+
+          <div className="bg-card border rounded-xl p-8 text-center space-y-5">
+            <p className="text-muted-foreground leading-relaxed">
+              আইসিটি অধিদপ্তর অফিসার্স এসোসিয়েশন (DOA)-এর গঠনতন্ত্র পিডিএফ আকারে ডাউনলোড বা দেখতে নিচের বাটনে ক্লিক করুন।
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <a href="/Constitution-DOA.pdf" target="_blank" rel="noopener noreferrer">
+                <Button size="lg" className="gap-2">
+                  <Eye size={18} /> গঠনতন্ত্র দেখুন
+                </Button>
+              </a>
+              <a href="/Constitution-DOA.pdf" download>
+                <Button size="lg" variant="outline" className="gap-2">
+                  <FileDown size={18} /> ডাউনলোড করুন
+                </Button>
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ─── Features ─────────────────────────────────────────────────────── */}
-      <section className="py-20 px-6 bg-muted/30">
+      {/* <section className="py-20 px-6 bg-muted/30">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold">কেন DEMS বেছে নেবেন?</h2>
@@ -151,10 +185,10 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ─── Roles Section ───────────────────────────────────────────────── */}
-      <section className="py-20 px-6">
+      {/* <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold">ব্যবহারকারীর ধরন</h2>
@@ -172,10 +206,10 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ─── How it works ─────────────────────────────────────────────────── */}
-      <section className="py-20 px-6 bg-muted/30">
+      {/* <section className="py-20 px-6 bg-muted/30">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold">কীভাবে কাজ করে?</h2>
@@ -198,10 +232,10 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ─── For whom ─────────────────────────────────────────────────────── */}
-      <section className="py-20 px-6">
+      {/* <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">কারা ব্যবহার করতে পারবেন?</h2>
           <p className="text-muted-foreground mb-10">যেকোনো প্রতিষ্ঠান যেখানে নির্বাচন বা ভোটগ্রহণ প্রয়োজন</p>
@@ -221,13 +255,13 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ─── Focal Point / Help Desk ────────────────────────────────────── */}
       <FocalPointSection />
 
       {/* ─── CTA ─────────────────────────────────────────────────────────── */}
-      <section className="py-20 px-6 bg-primary text-primary-foreground text-center">
+      {/* <section className="py-20 px-6 bg-primary text-primary-foreground text-center">
         <div className="max-w-xl mx-auto space-y-6">
           <h2 className="text-3xl font-bold">আজই শুরু করুন</h2>
           <p className="opacity-90">আপনার প্রতিষ্ঠানের নির্বাচন ডিজিটাল করুন। সম্পূর্ণ বিনামূল্যে নিবন্ধন করুন।</p>
@@ -237,7 +271,7 @@ export default function LandingPage() {
             </Button>
           </Link>
         </div>
-      </section>
+      </section> */}
 
       {/* ─── Footer ──────────────────────────────────────────────────────── */}
       <footer className="border-t py-8 px-6 text-center text-sm text-muted-foreground">
@@ -247,9 +281,10 @@ export default function LandingPage() {
         </div>
         <p>ডিজিটাল নির্বাচন ব্যবস্থাপনা সিস্টেম — বাংলাদেশ</p>
         <div className="flex justify-center gap-4 mt-3">
-          <Link to="/results"  className="hover:text-foreground transition-colors">ফলাফল</Link>
+          <Link to="/results"    className="hover:text-foreground transition-colors">ফলাফল</Link>
+          <Link to="/voter-list" className="hover:text-foreground transition-colors">সদস্য তালিকা</Link>
           <Link to="/login"    className="hover:text-foreground transition-colors">লগইন</Link>
-          <Link to="/register" className="hover:text-foreground transition-colors">নিবন্ধন</Link>
+          {/* <Link to="/register" className="hover:text-foreground transition-colors">নিবন্ধন</Link> */}
         </div>
       </footer>
     </div>
@@ -294,7 +329,7 @@ function FocalPointSection() {
         </div>
 
         {/* Search */}
-        {moderators.length > 5 && (
+        {/* {moderators.length > 5 && (
           <div className="relative max-w-md mx-auto mb-6">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <input
@@ -313,7 +348,7 @@ function FocalPointSection() {
               </button>
             )}
           </div>
-        )}
+        )} */}
 
         {/* Loading skeleton */}
         {isLoading && (

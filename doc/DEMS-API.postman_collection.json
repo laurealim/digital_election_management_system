@@ -1,0 +1,1456 @@
+{
+  "info": {
+    "name": "DEMS — Election Management System API",
+    "description": "Full API test collection for DEMS (Multi-Tenant SaaS Election Management System).\n\n## Base URL\n`{{baseUrl}}` = `http://localhost:8000/api/v1`\n\n## Authentication\nMost endpoints require a Sanctum Bearer token. Use the **Login** request first — it auto-saves the token to the `{{token}}` variable.\n\n## Standard Response Envelope\n```json\n{ \"success\": true, \"message\": \"...\", \"data\": {}, \"meta\": {} }\n```\n\n## Roles\nsuper_admin · org_admin · org_user · election_admin · election_user · voter · candidate",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000/api/v1" },
+    { "key": "token", "value": "" },
+    { "key": "organizationId", "value": "1" },
+    { "key": "electionId", "value": "1" },
+    { "key": "voterId", "value": "1" },
+    { "key": "postId", "value": "1" },
+    { "key": "candidateId", "value": "1" },
+    { "key": "userId", "value": "1" },
+    { "key": "roleId", "value": "1" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints — login, logout, password management.",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data && res.data.token) {",
+                  "    pm.collectionVariables.set('token', res.data.token);",
+                  "    pm.test('Token saved', () => pm.expect(res.data.token).to.be.a('string'));",
+                  "}",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has user data', () => pm.expect(res.data.user).to.be.an('object'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@dems.app\",\n  \"password\": \"Admin@1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticate a user and receive a Sanctum Bearer token.\n\n**Default super admin**: `admin@dems.app` / `Admin@1234`\n\nThe test script auto-saves the token to `{{token}}`."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Revoke the current token. Requires Bearer auth."
+          }
+        },
+        {
+          "name": "Me (Current User)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has user id', () => pm.expect(res.data.id).to.be.a('number'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Get the currently authenticated user's profile, roles, permissions, and organization."
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "forgot-password"]
+            },
+            "description": "Request a password reset email. Returns the same success message regardless of whether the email exists (prevents enumeration)."
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"token\": \"RESET_TOKEN_HERE\",\n  \"password\": \"NewPass@123\",\n  \"password_confirmation\": \"NewPass@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset-password"]
+            },
+            "description": "Reset password using the token received via email. Token expires in 60 minutes."
+          }
+        },
+        {
+          "name": "Setup Password (First Login)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"token\": \"SETUP_TOKEN_HERE\",\n  \"password\": \"MyPass@123\",\n  \"password_confirmation\": \"MyPass@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/setup-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "setup-password"]
+            },
+            "description": "Set password for the first time using the setup token from the invitation email."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public (No Auth)",
+      "description": "Publicly accessible endpoints — no authentication required.",
+      "item": [
+        {
+          "name": "Public Results — List",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/results?page=1&per_page=12",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "results"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Page number" },
+                { "key": "per_page", "value": "12", "description": "Items per page" }
+              ]
+            },
+            "description": "Paginated list of elections with publicly published results."
+          }
+        },
+        {
+          "name": "Public Results — Show",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/results/{{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "results", "{{electionId}}"]
+            },
+            "description": "Full election results for a public election (posts, winners, turnout %)."
+          }
+        },
+        {
+          "name": "Public Focal Points",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/focal-points",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "focal-points"]
+            },
+            "description": "List of moderators (focal points) with name, mobile, designation, and organization."
+          }
+        },
+        {
+          "name": "Public Voter List — List Elections",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/voter-list",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "voter-list"]
+            },
+            "description": "Elections that have public voter list enabled."
+          }
+        },
+        {
+          "name": "Public Voter List — Show",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/public/voter-list/{{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "voter-list", "{{electionId}}"]
+            },
+            "description": "Voters grouped by designation for a public election."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organizations",
+      "description": "Organization registration, verification, and profile management.",
+      "item": [
+        {
+          "name": "Register Organization (Public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (res.data && res.data.id) {",
+                  "    pm.collectionVariables.set('organizationId', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Organization\",\n  \"type\": \"private\",\n  \"email\": \"org@example.com\",\n  \"phone\": \"01700000000\",\n  \"address\": \"123 Test Street, Dhaka\",\n  \"admin_name\": \"Org Admin\",\n  \"admin_email\": \"orgadmin@example.com\",\n  \"admin_mobile\": \"01711111111\",\n  \"admin_designation\": \"Director\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations"]
+            },
+            "description": "Register a new organization with its admin user. Creates org + admin in a transaction. Sends verification email to org and setup email to admin.\n\n**Type enum**: `govt`, `private`, `association`, `cooperative`, `ngo`, `education`"
+          }
+        },
+        {
+          "name": "View Organization",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/organizations/{{organizationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", "{{organizationId}}"]
+            },
+            "description": "View organization details. Org admin sees own org only; super admin sees any."
+          }
+        },
+        {
+          "name": "Update Organization",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Org Name\",\n  \"type\": \"ngo\",\n  \"email\": \"newemail@example.com\",\n  \"phone\": \"01800000000\",\n  \"address\": \"456 New Street\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizations/{{organizationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", "{{organizationId}}"]
+            },
+            "description": "Update organization profile. Only org_admin or super_admin."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Elections",
+      "description": "Election CRUD, status management, and feature toggles.",
+      "item": [
+        {
+          "name": "List Elections",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections?status=&search=&per_page=15",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections"],
+              "query": [
+                { "key": "status", "value": "", "description": "Filter: draft|scheduled|active|completed|cancelled" },
+                { "key": "search", "value": "", "description": "Search by election name" },
+                { "key": "per_page", "value": "15", "description": "Items per page" }
+              ]
+            },
+            "description": "List elections for the current user's organization. Voters/candidates only see elections they are enrolled in."
+          }
+        },
+        {
+          "name": "Create Election",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (res.data && res.data.id) {",
+                  "    pm.collectionVariables.set('electionId', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Annual Board Election 2026\",\n  \"description\": \"Election for president, secretary, and treasurer positions.\",\n  \"election_date\": \"2026-06-15\",\n  \"voting_start_time\": \"09:00\",\n  \"voting_end_time\": \"17:00\",\n  \"candidate_mode\": \"selected\",\n  \"allow_multi_post\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections"]
+            },
+            "description": "Create a new election in `draft` status.\n\n**candidate_mode**: `selected` (admin assigns candidates) or `open` (all voters are candidates).\n**allow_multi_post**: If true, a candidate can run for multiple positions."
+          }
+        },
+        {
+          "name": "Show Election",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}"]
+            },
+            "description": "View election details with posts and organization info."
+          }
+        },
+        {
+          "name": "Update Election",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Election Name\",\n  \"description\": \"Updated description\",\n  \"election_date\": \"2026-07-01\",\n  \"voting_start_time\": \"10:00\",\n  \"voting_end_time\": \"18:00\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}"]
+            },
+            "description": "Update election. Only editable in `draft` status."
+          }
+        },
+        {
+          "name": "Delete Election",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}"]
+            },
+            "description": "Delete an election. Returns 204 No Content."
+          }
+        },
+        {
+          "name": "Change Election Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"scheduled\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "status"]
+            },
+            "description": "Transition election status.\n\n**Allowed transitions**: draft→scheduled, scheduled→active, active→completed, any→cancelled.\n\nOn `completed`: auto-publishes results and stamps `completed_at`."
+          }
+        },
+        {
+          "name": "Duplicate Election",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/duplicate",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "duplicate"]
+            },
+            "description": "Create a copy of the election with its posts (candidates are not copied). New election is in `draft` status."
+          }
+        },
+        {
+          "name": "Toggle Public Result",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/public-result",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "public-result"]
+            },
+            "description": "Toggle `is_public_result` flag. Org admin / election admin only."
+          }
+        },
+        {
+          "name": "Toggle Public Voter List",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/public-voter-list",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "public-voter-list"]
+            },
+            "description": "Toggle `is_public_voter_list` flag. Org admin / election admin only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voters",
+      "description": "Voter management within an election — add, remove, import, export, invitations.",
+      "item": [
+        {
+          "name": "List Voters",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voters?search=&has_voted=&per_page=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voters"],
+              "query": [
+                { "key": "search", "value": "", "description": "Search by voter name or email" },
+                { "key": "has_voted", "value": "", "description": "Filter: 1 (voted) or 0 (not voted)" },
+                { "key": "per_page", "value": "20", "description": "Items per page" }
+              ]
+            },
+            "description": "Paginated list of voters for the election. Includes user details and roles."
+          }
+        },
+        {
+          "name": "Add Voter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (res.data && res.data.id) {",
+                  "    pm.collectionVariables.set('voterId', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Voter Name\",\n  \"email\": \"voter@example.com\",\n  \"mobile\": \"01712345678\",\n  \"office_name\": \"Head Office\",\n  \"designation\": \"Manager\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voters",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voters"]
+            },
+            "description": "Add a single voter to the election. Creates or finds user by email within the same organization. Assigns voter role and sends invitation email.\n\nIf `candidate_mode=open`, the voter is also assigned the candidate role."
+          }
+        },
+        {
+          "name": "Update Voter",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Voter Name\",\n  \"mobile\": \"01799999999\",\n  \"office_name\": \"Branch Office\",\n  \"designation\": \"Senior Manager\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voters/{{voterId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voters", "{{voterId}}"]
+            },
+            "description": "Update voter profile details (name, mobile, office, designation)."
+          }
+        },
+        {
+          "name": "Remove Voter",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voters/{{voterId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voters", "{{voterId}}"]
+            },
+            "description": "Remove a voter from the election. Only when election is editable (draft). Returns 204."
+          }
+        },
+        {
+          "name": "Import Voters (Excel)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Excel file (.xlsx, .xls) or CSV. Max 5 MB. Columns: name, email, mobile, office_name, designation"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voters/import",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voters", "import"]
+            },
+            "description": "Bulk import voters from an Excel/CSV file.\n\n**Required columns**: name, email\n**Optional columns**: mobile, office_name, designation\n\nSkips duplicates. Returns import summary with per-row errors."
+          }
+        },
+        {
+          "name": "Export Voters (Excel)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voters/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voters", "export"]
+            },
+            "description": "Download voters as an Excel (.xlsx) file."
+          }
+        },
+        {
+          "name": "Copy Voters from Another Election",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voters/copy-from/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voters", "copy-from", "1"]
+            },
+            "description": "Copy all voters from a source election. Replace `1` in the URL with the source election ID.\n\nResponse: `{copied: N, skipped: M}`"
+          }
+        },
+        {
+          "name": "Resend Invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voters/{{voterId}}/resend-invitation",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voters", "{{voterId}}", "resend-invitation"]
+            },
+            "description": "Resend the invitation email to a single voter."
+          }
+        },
+        {
+          "name": "Send Bulk Invitations",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"voter_ids\": []\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voters/send-invitations",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voters", "send-invitations"]
+            },
+            "description": "Send invitations to multiple voters. Pass `voter_ids` array, or leave empty to send to all voters.\n\nResponse: `{sent: N, failed: M}`"
+          }
+        },
+        {
+          "name": "Toggle Moderator",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voters/{{voterId}}/toggle-moderator",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voters", "{{voterId}}", "toggle-moderator"]
+            },
+            "description": "Toggle the moderator role on a voter. Election admin / super admin only.\n\nResponse: `{voter_id, user_id, is_moderator}`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts (Positions)",
+      "description": "Manage election positions / posts (e.g. President, Secretary).",
+      "item": [
+        {
+          "name": "List Posts",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "posts"]
+            },
+            "description": "List all posts (positions) for the election, with candidate count."
+          }
+        },
+        {
+          "name": "Create Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (res.data && res.data.id) {",
+                  "    pm.collectionVariables.set('postId', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"President\",\n  \"description\": \"Leads the board of directors\",\n  \"max_votes\": 1,\n  \"order\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "posts"]
+            },
+            "description": "Create a new position in the election.\n\n**max_votes**: Number of candidates a voter can select for this post (default: 1).\n**order**: Display order."
+          }
+        },
+        {
+          "name": "Update Post",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Vice President\",\n  \"description\": \"Updated description\",\n  \"max_votes\": 1,\n  \"order\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "posts", "{{postId}}"]
+            },
+            "description": "Update a post. Only when election is editable (draft)."
+          }
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/posts/{{postId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "posts", "{{postId}}"]
+            },
+            "description": "Delete a post. Only when election is editable (draft). Returns 204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Candidates",
+      "description": "Assign or remove candidates for election posts.",
+      "item": [
+        {
+          "name": "List Candidates for Post",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/posts/{{postId}}/candidates",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "posts", "{{postId}}", "candidates"]
+            },
+            "description": "List candidates for a specific post.\n\nIn `open` mode: returns enrolled voters.\nIn `selected` mode: returns manually assigned candidates with bio."
+          }
+        },
+        {
+          "name": "Assign Candidate to Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (res.data && res.data.id) {",
+                  "    pm.collectionVariables.set('candidateId', res.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 2,\n  \"bio\": \"Experienced professional with 10 years of leadership.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/posts/{{postId}}/candidates",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "posts", "{{postId}}", "candidates"]
+            },
+            "description": "Assign a candidate to a post. Only works in `selected` mode.\n\n**Rules**:\n- User must be an enrolled voter\n- If `allow_multi_post=false`: user can only be candidate for 1 post\n- Cannot duplicate on same post"
+          }
+        },
+        {
+          "name": "Remove Candidate from Post",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/posts/{{postId}}/candidates/{{candidateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "posts", "{{postId}}", "candidates", "{{candidateId}}"]
+            },
+            "description": "Remove a candidate from a post. Returns 204."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voting",
+      "description": "Cast votes and check voting status.",
+      "item": [
+        {
+          "name": "Cast Vote",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"votes\": [\n    {\n      \"post_id\": 1,\n      \"candidate_id\": 5\n    },\n    {\n      \"post_id\": 2,\n      \"candidate_id\": 12\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/vote",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "vote"]
+            },
+            "description": "Cast votes for all posts in a single request. Atomic transaction.\n\n**Rules**:\n- Election must be `active`\n- User must be enrolled voter and not already voted\n- `candidate_id` refers to Candidate record ID in `selected` mode, or User ID in `open` mode\n- No duplicate posts in ballot\n- Each post limited to `max_votes` selections\n\n**Rate limit**: 10 requests/minute"
+          }
+        },
+        {
+          "name": "Voting Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/voting-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "voting-status"]
+            },
+            "description": "Check if the current user has voted in this election.\n\nResponse: `{has_voted: boolean, voted_at: datetime|null}`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Results",
+      "description": "Election results — view, export as PDF/Excel, and candidate self-view.",
+      "item": [
+        {
+          "name": "View Results",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/results",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "results"]
+            },
+            "description": "View aggregated election results: posts, winners, turnout %, vote tally, chart data.\n\nSuper admin always sees results. Others only see when `is_result_published=true`."
+          }
+        },
+        {
+          "name": "My Candidate Results",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/results/mine",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "results", "mine"]
+            },
+            "description": "View your own vote tally per post (candidate role only).\n\nResponse includes: votes_received, total_votes_cast, percentage per post."
+          }
+        },
+        {
+          "name": "Export Results (PDF)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/pdf" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/results/export/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "results", "export", "pdf"]
+            },
+            "description": "Download election results as a PDF (A4 format with winner highlighting)."
+          }
+        },
+        {
+          "name": "Export Results (Excel)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/results/export/excel",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "results", "export", "excel"]
+            },
+            "description": "Download election results as an Excel file (Summary sheet + one sheet per post)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dashboard statistics for org admins and super admins.",
+      "item": [
+        {
+          "name": "Org Admin Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard"]
+            },
+            "description": "Organization dashboard: election/voter totals, participation rates, status breakdown."
+          }
+        },
+        {
+          "name": "Super Admin Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "dashboard"]
+            },
+            "description": "Platform-wide stats: organizations, elections, voters, votes, trends, audit logs, org breakdown.\n\n**Requires**: `super_admin` role."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin — Organizations",
+      "description": "Super admin organization management.",
+      "item": [
+        {
+          "name": "List Organizations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/organizations?search=&type=&status=&per_page=15",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "organizations"],
+              "query": [
+                { "key": "search", "value": "", "description": "Search by name or email" },
+                { "key": "type", "value": "", "description": "Filter: govt|private|association|cooperative|ngo|education" },
+                { "key": "status", "value": "", "description": "Filter: active|inactive" },
+                { "key": "per_page", "value": "15", "description": "Items per page" }
+              ]
+            },
+            "description": "Paginated list of all organizations. Super admin only."
+          }
+        },
+        {
+          "name": "Create Organization (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Organization\",\n  \"type\": \"govt\",\n  \"email\": \"neworg@example.com\",\n  \"phone\": \"01700000000\",\n  \"address\": \"Dhaka, Bangladesh\",\n  \"admin_name\": \"Admin User\",\n  \"admin_email\": \"newadmin@example.com\",\n  \"admin_password\": \"Admin@1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "organizations"]
+            },
+            "description": "Create an organization directly with a pre-set admin password (no setup email).\n\nEmail is auto-verified. Org and admin are active immediately."
+          }
+        },
+        {
+          "name": "Show Organization (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/organizations/{{organizationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "organizations", "{{organizationId}}"]
+            },
+            "description": "View organization details with user/election counts."
+          }
+        },
+        {
+          "name": "Toggle Organization Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/organizations/{{organizationId}}/toggle-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "organizations", "{{organizationId}}", "toggle-status"]
+            },
+            "description": "Activate or deactivate an organization. Toggles `is_active`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin — Roles & Permissions",
+      "description": "Manage roles, permissions, and user role assignments.",
+      "item": [
+        {
+          "name": "List Roles & Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "roles"]
+            },
+            "description": "List all roles with their assigned permissions, plus the full permissions list.\n\n**Requires**: `super_admin` role."
+          }
+        },
+        {
+          "name": "Update Role Permissions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": [\n    \"create-elections\",\n    \"view-voters\",\n    \"manage-candidates\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/roles/{{roleId}}/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "roles", "{{roleId}}", "permissions"]
+            },
+            "description": "Sync permissions for a role. Cannot modify `super_admin` role.\n\n**Requires**: `super_admin` role."
+          }
+        },
+        {
+          "name": "List Voters with Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/voters?election_id=1&organization_id=&search=&per_page=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "voters"],
+              "query": [
+                { "key": "election_id", "value": "1", "description": "Required: election to list voters for" },
+                { "key": "organization_id", "value": "", "description": "Required for super_admin" },
+                { "key": "search", "value": "", "description": "Search by name or email" },
+                { "key": "per_page", "value": "20" }
+              ]
+            },
+            "description": "List voters with their roles for a specific election.\n\n**Requires**: `view-voters` permission."
+          }
+        },
+        {
+          "name": "Sync User Roles (voter/candidate)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\"voter\", \"candidate\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}", "roles"]
+            },
+            "description": "Sync voter/candidate roles for a user. Voter role is always enforced. Preserves other roles.\n\n**Requires**: `view-voters` permission."
+          }
+        },
+        {
+          "name": "Organizations List (Lightweight)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/organizations-list",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "organizations-list"]
+            },
+            "description": "Lightweight list of organizations `[{id, name}]` for dropdowns."
+          }
+        },
+        {
+          "name": "Elections List (Lightweight)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/elections-list?organization_id=",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "elections-list"],
+              "query": [
+                { "key": "organization_id", "value": "", "description": "Optional: filter by org" }
+              ]
+            },
+            "description": "Lightweight list of elections `[{id, name, election_date, status}]` for dropdowns."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin — Users (Staff)",
+      "description": "Super admin staff user management — create, update, roles, status, assigned elections.",
+      "item": [
+        {
+          "name": "List Staff Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?organization_id=&search=&per_page=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"],
+              "query": [
+                { "key": "organization_id", "value": "", "description": "Filter by organization" },
+                { "key": "search", "value": "", "description": "Search by name or email" },
+                { "key": "per_page", "value": "20" }
+              ]
+            },
+            "description": "Paginated list of staff users (excludes voter-only users). Super admin only."
+          }
+        },
+        {
+          "name": "Create Staff User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Staff User\",\n  \"email\": \"staff@example.com\",\n  \"roles\": [\"org_admin\"],\n  \"organization_id\": 1,\n  \"mobile\": \"01712345678\",\n  \"designation\": \"Manager\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"]
+            },
+            "description": "Create a staff user. Password is null — a setup email is sent automatically.\n\n**Roles**: `super_admin`, `org_admin`, `org_user`, `election_admin`, `election_user`, `moderator`\n\n`organization_id` is required for non-super_admin roles."
+          }
+        },
+        {
+          "name": "Update Staff User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"mobile\": \"01799999999\",\n  \"designation\": \"Senior Manager\",\n  \"organization_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}"]
+            },
+            "description": "Update staff user profile details."
+          }
+        },
+        {
+          "name": "Update Staff User Roles",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\"org_admin\", \"election_admin\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}", "role"]
+            },
+            "description": "Sync staff roles for a user. Preserves voter/candidate roles."
+          }
+        },
+        {
+          "name": "Toggle User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/toggle-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}", "toggle-status"]
+            },
+            "description": "Activate or deactivate a user. Cannot toggle own account."
+          }
+        },
+        {
+          "name": "Resend Setup Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/resend-setup",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}", "resend-setup"]
+            },
+            "description": "Resend the password setup email to a staff user."
+          }
+        },
+        {
+          "name": "Delete Staff User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}"]
+            },
+            "description": "Deactivate user and strip roles. Cannot delete own account. Returns 204."
+          }
+        },
+        {
+          "name": "View Assigned Elections",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/assigned-elections",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}", "assigned-elections"]
+            },
+            "description": "View elections assigned to a staff user."
+          }
+        },
+        {
+          "name": "Sync Assigned Elections",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"election_ids\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/assigned-elections",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}", "assigned-elections"]
+            },
+            "description": "Set which elections a staff user is assigned to manage."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Moderator",
+      "description": "Moderator endpoints — voter password resets and profile updates.",
+      "item": [
+        {
+          "name": "List Moderator Elections",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/moderator/elections",
+              "host": ["{{baseUrl}}"],
+              "path": ["moderator", "elections"]
+            },
+            "description": "List elections the moderator has access to.\n\n**Requires**: `send-reset-password` permission."
+          }
+        },
+        {
+          "name": "List Election Voters (Moderator)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/moderator/elections/{{electionId}}/voters?search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["moderator", "elections", "{{electionId}}", "voters"],
+              "query": [
+                { "key": "search", "value": "", "description": "Search by name, email, or mobile" }
+              ]
+            },
+            "description": "List voters for a moderator's election. Searchable by name, email, or mobile."
+          }
+        },
+        {
+          "name": "Update Voter Profile (Moderator)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"mobile\": \"01712345678\",\n  \"office_name\": \"Updated Office\",\n  \"designation\": \"Updated Designation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/moderator/voters/{{voterId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["moderator", "voters", "{{voterId}}"]
+            },
+            "description": "Update voter profile details via moderator access."
+          }
+        },
+        {
+          "name": "Generate Password Reset Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/moderator/voters/{{voterId}}/generate-reset-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["moderator", "voters", "{{voterId}}", "generate-reset-link"]
+            },
+            "description": "Generate a password reset link for a voter. Does NOT send email — returns the link for the moderator to share.\n\nResponse: `{reset_link, voter_name}`"
+          }
+        }
+      ]
+    }
+  ]
+}
