@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { getPublicFocalPoints } from '@/api/publicResults'
-import { Vote, Shield, Users, BarChart2, CheckCircle2, Globe, ArrowRight, Building2, Zap, Lock, Phone, Headset, Search, X, FileDown, Eye, BookOpen } from 'lucide-react'
+import { getPublicFocalPoints, getPublicLiveElections } from '@/api/publicResults'
+import { Vote, Shield, Users, BarChart2, CheckCircle2, Globe, ArrowRight, Building2, Zap, Lock, Phone, Headset, Search, X, FileDown, Eye, BookOpen, Radio, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 // ─── Feature data ─────────────────────────────────────────────────────────────
 const FEATURES = [
@@ -131,6 +131,9 @@ export default function LandingPage() {
           </div> */}
         </div>
       </section>
+
+      {/* ─── Live Election Status ───────────────────────────────────────────────── */}
+      <LiveElectionStatus />
 
       {/* ─── Constitution of DOA ─────────────────────────────────────────────────── */}
       <section className="py-5 px-6 bg-muted/30">
@@ -287,6 +290,241 @@ export default function LandingPage() {
           {/* <Link to="/register" className="hover:text-foreground transition-colors">নিবন্ধন</Link> */}
         </div>
       </footer>
+    </div>
+  )
+}
+
+// ─── Live Election Status Section ─────────────────────────────────────────────
+function LiveElectionStatus() {
+  const intervalRef = useRef(30)
+
+  const { data, isLoading, dataUpdatedAt } = useQuery({
+    queryKey: ['public-live-elections'],
+    queryFn: () => getPublicLiveElections().then((r) => r.data.data),
+    refetchInterval: () => intervalRef.current * 1000,
+    refetchIntervalInBackground: false,
+  })
+
+  const refreshInterval = data?.refresh_interval ?? 30
+  const elections = data?.elections ?? []
+
+  // Keep ref in sync for refetchInterval callback
+  useEffect(() => {
+    intervalRef.current = refreshInterval
+  }, [refreshInterval])
+
+  // Don't render the section at all if no live elections
+  if (!isLoading && elections.length === 0) return null
+
+  return (
+    <section className="relative py-10 px-6 overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-emerald-500/5 to-blue-500/5" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
+
+      <div className="relative max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-4 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 shadow-sm mb-4">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+            </span>
+            লাইভ ভোটগ্রহণ চলছে
+          </div>
+          <h2 className="text-3xl font-bold">সরাসরি ভোটদান অগ্রগতি</h2>
+          <p className="text-muted-foreground mt-2">রিয়েলটাইম ভোটগ্রহণের হালনাগাদ তথ্য</p>
+          {!isLoading && elections.length > 0 && (
+            <CountdownTimer key={dataUpdatedAt} interval={refreshInterval} />
+          )}
+        </div>
+
+        {/* Loading skeleton */}
+        {isLoading && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="rounded-2xl border bg-card p-6 animate-pulse space-y-4">
+                <div className="h-5 bg-muted rounded w-3/4" />
+                <div className="h-4 bg-muted rounded w-1/2" />
+                <div className="h-32 bg-muted rounded" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Live Election Cards */}
+        {!isLoading && elections.length > 0 && (
+          <div className={`grid gap-6 ${elections.length === 1 ? 'max-w-lg mx-auto' : 'sm:grid-cols-2'}`}>
+            {elections.map((election) => (
+              <LiveElectionCard key={election.id} election={election} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+// ─── Countdown Timer (self-contained, no parent setState) ─────────────────────
+function CountdownTimer({ interval }) {
+  const [seconds, setSeconds] = useState(interval)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSeconds((s) => (s <= 1 ? interval : s - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [interval])
+
+  return (
+    <p className="text-xs text-muted-foreground mt-2">
+      পরবর্তী আপডেট: <span className="font-mono font-semibold text-primary">{seconds}</span> সেকেন্ড
+    </p>
+  )
+}
+
+// ─── Animated number that smoothly counts up/down ─────────────────────────────
+function AnimatedValue({ value, formatBn = false, suffix = '' }) {
+  const [display, setDisplay] = useState(value)
+  const prevRef = useRef(value)
+
+  useEffect(() => {
+    const from = prevRef.current
+    const to = value
+    if (from === to) return
+    prevRef.current = to
+
+    const duration = 800
+    const start = performance.now()
+
+    const animate = (now) => {
+      const elapsed = now - start
+      const progress = Math.min(elapsed / duration, 1)
+      // ease-out quad
+      const eased = 1 - (1 - progress) * (1 - progress)
+      const current = Math.round(from + (to - from) * eased)
+      setDisplay(current)
+      if (progress < 1) requestAnimationFrame(animate)
+    }
+
+    requestAnimationFrame(animate)
+  }, [value])
+
+  const text = formatBn ? display.toLocaleString('bn-BD') : display
+  return <>{text}{suffix}</>
+}
+
+// ─── Single Live Election Card ────────────────────────────────────────────────
+function LiveElectionCard({ election }) {
+  const { name, total_voters, total_voted, percentage, voting_start, voting_end, election_date, id } = election
+  // Use a unique gradient ID per card to avoid SVG ID collisions
+  const gradientId = `progress-gradient-${id}`
+
+  return (
+    <div className="group relative rounded-2xl border bg-card shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+      {/* Top accent bar with pulse animation */}
+      <div className="h-1.5 bg-gradient-to-r from-primary via-emerald-500 to-blue-500 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary via-emerald-500 to-blue-500 animate-pulse opacity-60" />
+      </div>
+
+      <div className="p-6 space-y-5">
+        {/* Election Name + Live Badge */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-bold text-lg leading-tight truncate">{name}</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              {election_date} · {voting_start} – {voting_end}
+            </p>
+          </div>
+          <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-red-100 dark:bg-red-950/50 px-3 py-1 text-xs font-semibold text-red-600 dark:text-red-400">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
+            LIVE
+          </span>
+        </div>
+
+        {/* Circular Progress */}
+        <div className="flex items-center gap-6">
+          <div className="relative w-28 h-28 shrink-0">
+            <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
+              <circle
+                cx="60" cy="60" r="52"
+                stroke="currentColor"
+                strokeWidth="8"
+                fill="none"
+                className="text-muted/20"
+              />
+              <circle
+                cx="60" cy="60" r="52"
+                stroke={`url(#${gradientId})`}
+                strokeWidth="8"
+                fill="none"
+                strokeLinecap="round"
+                strokeDasharray={`${(percentage / 100) * 326.73} 326.73`}
+                className="transition-all duration-1000 ease-out"
+              />
+              <defs>
+                <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" />
+                  <stop offset="50%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#3b82f6" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-2xl font-extrabold text-primary">
+                <AnimatedValue value={percentage} suffix="%" />
+              </span>
+              <span className="text-[10px] text-muted-foreground font-medium">ভোট হয়েছে</span>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/30">
+              <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <Users size={18} />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">মোট ভোটার</p>
+                <p className="text-lg font-bold leading-tight">
+                  <AnimatedValue value={total_voters} formatBn />
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/30">
+              <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Vote size={18} />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">ভোট দিয়েছেন</p>
+                <p className="text-lg font-bold leading-tight">
+                  <AnimatedValue value={total_voted} formatBn />
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+            <span>অগ্রগতি</span>
+            <span><AnimatedValue value={total_voted} /> / <AnimatedValue value={total_voters} /></span>
+          </div>
+          <div className="h-3 rounded-full bg-muted/30 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary via-emerald-500 to-blue-500 transition-all duration-1000 ease-out relative"
+              style={{ width: `${Math.min(percentage, 100)}%` }}
+            >
+              <div className="absolute inset-0 bg-white/20 animate-pulse rounded-full" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

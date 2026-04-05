@@ -115,6 +115,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // ─── Moderator — view/edit voters, send invitations, password reset ───
         $moderator = Role::firstOrCreate(['name' => 'moderator', 'guard_name' => 'web']);
         $moderator->syncPermissions([
+            'view-elections',
             'view-voters',
             'manage-voters',
             'send-reset-password',

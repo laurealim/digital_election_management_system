@@ -16,13 +16,14 @@ class ResultsExport implements WithMultipleSheets
     public function sheets(): array
     {
         $sheets = [];
+        $totalVoters = $this->results['turnout']['total_voters'] ?? 0;
 
         // Summary sheet
         $sheets[] = new ResultsSummarySheet($this->results);
 
         // One sheet per post
         foreach ($this->results['posts'] as $post) {
-            $sheets[] = new ResultsPostSheet($post);
+            $sheets[] = new ResultsPostSheet($post, $totalVoters);
         }
 
         return $sheets;
@@ -56,13 +57,14 @@ class ResultsSummarySheet implements FromCollection, WithHeadings, WithTitle
             ['Total Voters',   $turnout['total_voters']],
             ['Votes Cast',     $turnout['voted_count']],
             ['Turnout %',      $turnout['turnout_pct'] . '%'],
+            ['Total Posts',    count($this->results['posts'] ?? [])],
         ]);
     }
 }
 
 class ResultsPostSheet implements FromCollection, WithHeadings, WithTitle
 {
-    public function __construct(private readonly array $post) {}
+    public function __construct(private readonly array $post, private readonly int $totalVoters) {}
 
     public function title(): string
     {
@@ -71,20 +73,29 @@ class ResultsPostSheet implements FromCollection, WithHeadings, WithTitle
 
     public function headings(): array
     {
-        return ['Rank', 'Candidate', 'Votes', 'Winner'];
+        return ['Sr.', 'Candidate', 'Votes', 'Vote %'];
     }
 
     public function collection(): Collection
     {
-        $winnerIds = collect($this->post['winners'])->pluck('id')->all();
+        $winnerIds  = collect($this->post['winners'])->pluck('id')->all();
+        $totalVotes = $this->post['total_votes'] ?? 0;
 
-        return collect($this->post['candidates'])->values()->map(function ($c, $i) use ($winnerIds) {
-            return [
-                $i + 1,
-                $c['user']['name'],
-                $c['vote_count'],
-                in_array($c['id'], $winnerIds) ? 'Yes' : '',
-            ];
-        });
+        return collect($this->post['candidates'])
+            ->filter(fn ($c) => ($c['vote_count'] ?? 0) >= 1)
+            ->values()
+            ->map(function ($c, $i) use ($winnerIds, $totalVotes) {
+                $votePct = $totalVotes > 0
+                    ? round(($c['vote_count'] / $totalVotes) * 100, 1) . '%'
+                    : '0%';
+
+                return [
+                    $i + 1,
+                    $c['user']['name'],
+                    $c['vote_count'],
+                    $votePct,
+                    // in_array($c['id'], $winnerIds) ? 'Yes' : '',
+                ];
+            });
     }
 }

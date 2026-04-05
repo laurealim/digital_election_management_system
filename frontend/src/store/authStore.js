@@ -13,6 +13,12 @@ const useAuthStore = create((set) => ({
     set({ user, token })
   },
 
+  /** Update user data (roles/permissions) without changing token */
+  updateUser: (user) => {
+    localStorage.setItem(USER_KEY, JSON.stringify(user))
+    set({ user })
+  },
+
   logout: () => {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)

@@ -226,7 +226,7 @@ function VotersTab({ isSuperAdmin }) {
   })
 
   const voters   = votersPage?.data ?? []
-  const meta     = votersPage?.meta ?? {}
+  const meta     = votersPage?.meta?.pagination ?? {}
   const lastPage = meta.last_page ?? 1
 
   return (
@@ -323,28 +323,30 @@ function VotersTab({ isSuperAdmin }) {
           )}
 
           {/* Pagination */}
-          {lastPage > 1 && (
+          {voters.length > 0 && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                পৃষ্ঠা {meta.current_page} / {lastPage} · মোট {meta.total} জন
+                পৃষ্ঠা {meta.current_page ?? 1} / {lastPage} · মোট {meta.total ?? voters.length} জন
               </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline" size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  <ChevronLeft size={14} />
-                </Button>
-                <span className="px-2">{page}</span>
-                <Button
-                  variant="outline" size="sm"
-                  disabled={page >= lastPage}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  <ChevronRight size={14} />
-                </Button>
-              </div>
+              {lastPage > 1 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline" size="sm"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => p - 1)}
+                  >
+                    <ChevronLeft size={14} />
+                  </Button>
+                  <span className="px-2">{page}</span>
+                  <Button
+                    variant="outline" size="sm"
+                    disabled={page >= lastPage}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    <ChevronRight size={14} />
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </>
@@ -521,19 +523,21 @@ function StaffTab() {
       </div>
 
       {/* Pagination */}
-      {lastPage > 1 && (
+      {users.length > 0 && (
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            পৃষ্ঠা {meta.current_page} / {lastPage} · মোট {meta.total} জন
+            পৃষ্ঠা {meta.current_page ?? 1} / {lastPage} · মোট {meta.total ?? users.length} জন
           </span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-              <ChevronLeft size={14} />
-            </Button>
-            <Button variant="outline" size="sm" disabled={page >= lastPage} onClick={() => setPage(p => p + 1)}>
-              <ChevronRight size={14} />
-            </Button>
-          </div>
+          {lastPage > 1 && (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                <ChevronLeft size={14} />
+              </Button>
+              <Button variant="outline" size="sm" disabled={page >= lastPage} onClick={() => setPage(p => p + 1)}>
+                <ChevronRight size={14} />
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

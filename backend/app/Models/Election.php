@@ -24,6 +24,7 @@ class Election extends \App\Models\TenantModel
         'is_result_published',
         'is_public_result',
         'is_public_voter_list',
+        'is_live_display',
         'completed_at',
     ];
 
@@ -35,6 +36,7 @@ class Election extends \App\Models\TenantModel
             'is_result_published'    => 'boolean',
             'is_public_result'       => 'boolean',
             'is_public_voter_list'   => 'boolean',
+            'is_live_display'        => 'boolean',
             'completed_at'           => 'datetime',
         ];
     }

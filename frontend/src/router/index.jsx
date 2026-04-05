@@ -27,6 +27,7 @@ import AdminOrganizations from '@/pages/admin/Organizations'
 import AdminDashboard     from '@/pages/admin/AdminDashboard'
 import RolesPage          from '@/pages/admin/RolesPage'
 import UsersPage          from '@/pages/admin/UsersPage'
+import LiveElectionsPage  from '@/pages/admin/LiveElectionsPage'
 
 // Org / management pages
 import OrgDashboard   from '@/pages/org/OrgDashboard'
@@ -72,6 +73,7 @@ const router = createBrowserRouter([
       { path: '/admin/organizations',           element: <AdminOrganizations /> },
       { path: '/admin/roles',                   element: <RolesPage /> },
       { path: '/admin/users',                   element: <UsersPage /> },
+      { path: '/admin/live-elections',           element: <LiveElectionsPage /> },
       { path: '/admin/elections',               element: <ElectionList /> },
       { path: '/admin/elections/new',           element: <ElectionForm /> },
       { path: '/admin/elections/:id/edit',      element: <ElectionForm /> },

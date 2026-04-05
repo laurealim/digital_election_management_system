@@ -173,6 +173,19 @@ export default function ResultsPage() {
               </Button>
             </div>
           )}
+
+          {!isAdmin && election.is_result_published && (
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport("excel")}
+              >
+                <FileSpreadsheet size={14} className="mr-1.5" />{" "}
+                {t("results.export_excel")}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -348,7 +361,7 @@ function PostResultCard({ post, t }) {
   const barData = candidates
     .slice()
     .sort((a, b) => b.vote_count - a.vote_count)
-    .slice(0, 10)
+    // .slice(0, 3)
     .map((c) => ({
       name: c.user.name,
       votes: c.vote_count,

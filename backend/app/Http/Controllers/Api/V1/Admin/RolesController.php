@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesController extends ApiController
 {
@@ -48,6 +49,8 @@ class RolesController extends ApiController
         ]);
 
         $role->syncPermissions($request->permissions);
+
+        app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return $this->success([
             'id'          => $role->id,

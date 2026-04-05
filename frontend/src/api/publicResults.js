@@ -14,3 +14,6 @@ export const getPublicVoterList = () =>
 
 export const getPublicVoterListByElection = (id) =>
   api.get(`/public/voter-list/${id}`)
+
+export const getPublicLiveElections = () =>
+  api.get('/public/live-elections')

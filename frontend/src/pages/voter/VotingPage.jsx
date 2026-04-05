@@ -161,11 +161,11 @@ function InstructionsScreen({ election, onProceed, onBack }) {
       </div>
 
       <div className="border rounded-xl p-5 space-y-3 bg-card">
-        <h2 className="font-semibold">{t('voting.instructions')}</h2>
+        <h2 className="font-semibold">{t('voting.instructions_title')}</h2>
         <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
           <li>{t('voting.instruction_1')}</li>
           <li>{t('voting.instruction_2')}</li>
-          <li><strong className="text-foreground">{t('voting.vote_final')}</strong> {t('voting.instruction_3')}</li>
+          <li>{t('voting.instruction_3')}</li>
           <li>{t('voting.instruction_4')}</li>
           <li>{t('voting.instruction_5')}</li>
         </ul>

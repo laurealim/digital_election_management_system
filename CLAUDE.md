@@ -102,6 +102,9 @@ Route-level protection uses `->middleware('role:super_admin')` or `'role:super_a
 | `app/Mail/PasswordResetMail.php` | Mailable — handles both `reset` and `setup` types |
 | `database/seeders/RolesAndPermissionsSeeder.php` | Seeds 7 roles + 21 granular permissions |
 | `app/Http/Controllers/Api/V1/Admin/RolesController.php` | GET/PUT roles+permissions; GET/PUT user role assignment |
+| `app/Models/SystemSetting.php` | Key-value settings table (getValue/setValue helpers) |
+| `app/Http/Controllers/Api/V1/PublicLiveElectionController.php` | Public live election stats for landing page |
+| `app/Http/Controllers/Api/V1/Admin/LiveElectionController.php` | Toggle live display per election, update refresh interval |
 | `database/seeders/SuperAdminSeeder.php` | Default super admin: `admin@dems.app` / `Admin@1234` |
 | `app/Models/Organization.php` | Tenant root model; `isVerified()`, `admins()` helpers |
 | `app/Http/Controllers/Api/V1/OrganizationController.php` | Public registration (org + admin in 1 transaction), email verify, profile view/update |
@@ -154,6 +157,8 @@ Route-level protection uses `->middleware('role:super_admin')` or `'role:super_a
 | `src/pages/admin/RolesPage.jsx` | Permissions matrix editor + user role assignment table |
 | `src/pages/voter/CandidateResultsPage.jsx` | Candidate's own vote tally per post with charts |
 | `src/api/roles.js` | `getRolesAndPermissions`, `updateRolePermissions`, `getUsers`, `assignUserRole` |
+| `src/api/liveElections.js` | Admin live election management API (toggle display, refresh interval) |
+| `src/pages/admin/LiveElectionsPage.jsx` | Admin UI to toggle live display per election + set refresh interval |
 | `src/i18n/bn.json` + `en.json` | Full Bengali + English translations for all UI text |
 
 ### Role-Based UI Guards

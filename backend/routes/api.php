@@ -23,6 +23,8 @@ use App\Http\Controllers\Api\V1\PublicFocalPointController;
 use App\Http\Controllers\Api\V1\PublicVoterListController;
 use App\Http\Controllers\Api\V1\ResendWebhookController;
 use App\Http\Controllers\Api\V1\ModeratorResetPasswordController;
+use App\Http\Controllers\Api\V1\PublicLiveElectionController;
+use App\Http\Controllers\Api\V1\Admin\LiveElectionController as AdminLiveElectionController;
 
 Route::prefix('v1')->group(function () {
 
@@ -40,6 +42,7 @@ Route::prefix('v1')->group(function () {
     Route::get('public/focal-points', [PublicFocalPointController::class, 'index']);
     Route::get('public/voter-list',      [PublicVoterListController::class, 'index']);
     Route::get('public/voter-list/{id}', [PublicVoterListController::class, 'show']);
+    Route::get('public/live-elections',  [PublicLiveElectionController::class, 'index']);
 
     // ─── Resend Webhook (no auth — Resend calls this) ─────────────────────────
     Route::post('webhooks/resend', [ResendWebhookController::class, 'handle']);
@@ -132,6 +135,11 @@ Route::prefix('v1')->group(function () {
             Route::delete('users/{user}',                   [AdminUserController::class, 'destroy']);
             Route::get('users/{user}/assigned-elections',    [AdminUserController::class, 'assignedElections']);
             Route::put('users/{user}/assigned-elections',    [AdminUserController::class, 'syncAssignedElections']);
+
+            // Live election display management (super_admin only)
+            Route::get('live-elections',                                [AdminLiveElectionController::class, 'index']);
+            Route::patch('elections/{election}/toggle-live-display',    [AdminLiveElectionController::class, 'toggleLiveDisplay']);
+            Route::put('settings/live-refresh-interval',               [AdminLiveElectionController::class, 'updateRefreshInterval']);
         });
 
         // ─── Voter-with-roles management (any user with view-voters permission) ─
