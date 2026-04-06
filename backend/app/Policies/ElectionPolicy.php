@@ -30,42 +30,63 @@ class ElectionPolicy
     {
         if ($user->isSuperAdmin()) return $election->isEditable();
 
-        return $user->can('edit-elections')
-            && $user->organization_id === $election->organization_id
-            && $election->isEditable();
+        if (! $user->can('edit-elections') || ! $election->isEditable()) return false;
+
+        return $this->hasElectionAccess($user, $election);
     }
 
     public function delete(User $user, Election $election): bool
     {
         if ($user->isSuperAdmin()) return $election->isEditable();
 
-        return $user->can('delete-elections')
-            && $user->organization_id === $election->organization_id
-            && $election->isEditable();
+        if (! $user->can('delete-elections') || ! $election->isEditable()) return false;
+
+        return $this->hasElectionAccess($user, $election);
     }
 
     public function duplicate(User $user, Election $election): bool
     {
         if ($user->isSuperAdmin()) return true;
 
-        return $user->can('create-elections')
-            && $user->organization_id === $election->organization_id;
+        if (! $user->can('create-elections')) return false;
+
+        return $this->hasElectionAccess($user, $election);
     }
 
     public function updateStatus(User $user, Election $election): bool
     {
         if ($user->isSuperAdmin()) return ! $election->isImmutable();
 
-        return $user->can('edit-elections')
-            && $user->organization_id === $election->organization_id
-            && ! $election->isImmutable();
+        if (! $user->can('edit-elections') || $election->isImmutable()) return false;
+
+        return $this->hasElectionAccess($user, $election);
     }
 
     public function togglePublicResult(User $user, Election $election): bool
     {
         if ($user->isSuperAdmin()) return true;
 
-        return $user->can('edit-elections')
-            && $user->organization_id === $election->organization_id;
+        if (! $user->can('edit-elections')) return false;
+
+        return $this->hasElectionAccess($user, $election);
+    }
+
+    /**
+     * org_admin / org_user — access by organization_id.
+     * election_admin / election_user — access by moderator_election assignment.
+     */
+    private function hasElectionAccess(User $user, Election $election): bool
+    {
+        if ($user->hasAnyRole(['org_admin', 'org_user'])) {
+            return $user->organization_id === $election->organization_id;
+        }
+
+        if ($user->hasAnyRole(['election_admin', 'election_user'])) {
+            return $user->assignedElections()
+                ->where('election_id', $election->id)
+                ->exists();
+        }
+
+        return false;
     }
 }
