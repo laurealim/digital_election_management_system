@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Mail\VoterInvitationMail;
 use App\Models\Election;
 use App\Models\EmailLog;
+use App\Models\EmailOutbox;
 use App\Models\User;
 use App\Models\Voter;
 use App\Services\PasswordResetService;
@@ -34,9 +35,20 @@ class SendVoterInvitationJob implements ShouldQueue
         // Generate a setup token so the voter can set their password
         $token = $passwordResetService->generateToken($this->user->email, 'setup');
 
-        Mail::to($this->user->email)->send(
-            new VoterInvitationMail($this->user, $this->election, $token)
-        );
+        $mail = new VoterInvitationMail($this->user, $this->election, $token);
+
+        // Save full email to outbox before sending so it can be resent via SMS/other channel if mail is down
+        EmailOutbox::create([
+            'type'            => 'voter_invitation',
+            'to_address'      => $this->user->email,
+            'subject'         => $mail->envelope()->subject,
+            'body'            => $mail->render(),
+            'reference_id'    => $this->voter->id,
+            'organization_id' => $this->voter->organization_id,
+            'status'          => 'pending',
+        ]);
+
+        Mail::to($this->user->email)->send($mail);
 
         EmailLog::record(
             VoterInvitationMail::class,
