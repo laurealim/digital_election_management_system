@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 abstract class TenantModel extends Model
 {
+    public function newCollection(array $models = []): \Illuminate\Database\Eloquent\Collection
+    {
+        return new \Illuminate\Database\Eloquent\Collection($models);
+    }
+
     protected static function booted(): void
     {
         static::addGlobalScope(new TenantScope());
