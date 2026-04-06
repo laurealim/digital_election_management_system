@@ -73,7 +73,7 @@ class ElectionPolicy
 
     /**
      * org_admin / org_user — access by organization_id.
-     * election_admin / election_user — access by moderator_election assignment.
+     * election_admin / election_user — org match OR explicit moderator_election assignment.
      */
     private function hasElectionAccess(User $user, Election $election): bool
     {
@@ -82,8 +82,13 @@ class ElectionPolicy
         }
 
         if ($user->hasAnyRole(['election_admin', 'election_user'])) {
+            // Allow if same org
+            if ($user->organization_id && $user->organization_id === $election->organization_id) {
+                return true;
+            }
+            // Allow if explicitly assigned via moderator_election pivot
             return $user->assignedElections()
-                ->where('election_id', $election->id)
+                ->whereKey($election->id)
                 ->exists();
         }
 
