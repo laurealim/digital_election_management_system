@@ -1,0 +1,256 @@
+{
+  "name": "DEMS Email Outbox Sender",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dems-email-dispatch",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-2224, 1448],
+      "id": "f07d46af-ca28-47f6-a89e-ae5883d13d85",
+      "name": "Webhook Trigger",
+      "webhookId": "dems-email-dispatch"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM email_outbox WHERE status = 'pending' AND organization_id = {{ $json.body.organization_id }} ORDER BY created_at ASC LIMIT 100",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [-1984, 1448],
+      "id": "a2b3c4d5-0002-0002-0002-000000000002",
+      "name": "Get Pending Emails",
+      "credentials": {
+        "mySql": {
+          "id": "kSqb9FcaYcw0mDm9",
+          "name": "MySQL account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [-1744, 1448],
+      "id": "8348bda3-2a0c-4173-a946-720f372ae019",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.to_address }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [-1296, 1232],
+      "id": "7001bf87-3d6a-430d-80cd-18b086e2a840",
+      "name": "Send Email",
+      "webhookId": "43cb84b9-c0bd-4927-8b58-2e91ee1dd5fc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "RVCVUt0FSpVPqcpA",
+          "name": "AL: Gmail API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a1b2c3d4-0005-0005-0005-000000000005",
+              "leftValue": "={{ $json.labelIds.join(',') }}",
+              "rightValue": "SENT",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-1072, 1232],
+      "id": "b030ec04-5b43-416f-869f-6f7bfea0a5ea",
+      "name": "If Sent"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE email_outbox SET status = 'sent' WHERE id = {{ $('Loop Over Items1').item.json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [-848, 1136],
+      "id": "173a9daa-cf79-4321-a603-4be715867ced",
+      "name": "Mark as Sent",
+      "credentials": {
+        "mySql": {
+          "id": "kSqb9FcaYcw0mDm9",
+          "name": "MySQL account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE email_outbox SET status = 'failed' WHERE id = {{ $('Loop Over Items1').item.json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.4,
+      "position": [-848, 1328],
+      "id": "aa9efdfa-d755-4def-8a4c-a86cbf09a43b",
+      "name": "Mark as Failed",
+      "credentials": {
+        "mySql": {
+          "id": "kSqb9FcaYcw0mDm9",
+          "name": "MySQL account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": true, \"message\": \"Email dispatch completed\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [-608, 1136],
+      "id": "cc1d2e3f-0008-0008-0008-000000000008",
+      "name": "Respond OK"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Pending Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Pending Emails": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "If Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Sent": {
+      "main": [
+        [
+          {
+            "node": "Mark as Sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark as Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Sent": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Failed": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "50918ee0be4fd9ad8edd59da0eb4c4a6502c186d6a425a1cf635ba824838446e"
+  },
+  "id": "Snwy6VWIeXn84KQV",
+  "tags": [
+    {
+      "name": "email-automation"
+    }
+  ]
+}

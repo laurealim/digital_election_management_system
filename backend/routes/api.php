@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\ResendWebhookController;
 use App\Http\Controllers\Api\V1\ModeratorResetPasswordController;
 use App\Http\Controllers\Api\V1\PublicLiveElectionController;
 use App\Http\Controllers\Api\V1\Admin\LiveElectionController as AdminLiveElectionController;
+use App\Http\Controllers\Api\V1\EmailDispatchController;
 
 Route::prefix('v1')->group(function () {
 
@@ -72,6 +73,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('elections/{election}/status',        [ElectionController::class, 'updateStatus']);
         Route::patch('elections/{election}/public-result', [ElectionController::class, 'togglePublicResult']);
         Route::patch('elections/{election}/public-voter-list', [ElectionController::class, 'togglePublicVoterList']);
+        Route::post('elections/{election}/trigger-email-dispatch', [EmailDispatchController::class, 'trigger']);
 
         // Voters (nested under elections)
         Route::prefix('elections/{election}')->group(function () {

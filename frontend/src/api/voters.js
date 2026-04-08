@@ -34,3 +34,6 @@ export const toggleModerator = (electionId, voterId) =>
 
 export const sendBulkInvitations = (electionId, voterIds = []) =>
   api.post(`/elections/${electionId}/voters/send-invitations`, { voter_ids: voterIds })
+
+export const triggerEmailDispatch = (electionId) =>
+  api.post(`/elections/${electionId}/trigger-email-dispatch`)

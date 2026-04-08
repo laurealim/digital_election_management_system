@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   getVoters, addVoter, updateVoter, deleteVoter,
   resendInvitation, importVoters, copyVotersFrom, exportVoters, sendBulkInvitations,
+  triggerEmailDispatch,
 } from '@/api/voters'
 import { getElections } from '@/api/elections'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { UserPlus, Upload, Trash2, Mail, X, Copy, Pencil, Download, Send, Users, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { UserPlus, Upload, Trash2, Mail, X, Copy, Pencil, Download, Send, Users, CheckCircle2, XCircle, Clock, Zap } from 'lucide-react'
 import useAuthStore, { isSuperAdmin, hasPermission } from '@/store/authStore'
 
 function MailStatusBadge({ status, sentAt }) {
@@ -68,9 +69,25 @@ export default function VotersTab({ election }) {
   const [importResult,  setImportResult]  = useState(null)
   const [exporting,     setExporting]     = useState(false)
   const [selectedIds,   setSelectedIds]   = useState(new Set())
-  const [showBulkModal, setShowBulkModal] = useState(false)
-  const [bulkSuccess,   setBulkSuccess]   = useState(null)
+  const [showBulkModal,    setShowBulkModal]    = useState(false)
+  const [bulkSuccess,      setBulkSuccess]      = useState(null)
+  const [dispatchMsg,      setDispatchMsg]      = useState(null)
+  const [dispatchLoading,  setDispatchLoading]  = useState(false)
   const fileRef = useRef()
+
+  async function handleEmailDispatch() {
+    setDispatchLoading(true)
+    setDispatchMsg(null)
+    try {
+      await triggerEmailDispatch(election.id)
+      setDispatchMsg({ type: 'success', text: 'ইমেইল ডিসপ্যাচ সফলভাবে শুরু হয়েছে।' })
+    } catch {
+      setDispatchMsg({ type: 'error', text: 'ইমেইল ডিসপ্যাচ ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।' })
+    } finally {
+      setDispatchLoading(false)
+      setTimeout(() => setDispatchMsg(null), 6000)
+    }
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: [...qKey, search, page],
@@ -201,6 +218,22 @@ export default function VotersTab({ election }) {
           </>
         )}
 
+        {/* n8n email dispatch button — triggers pending outbox for this org */}
+        {canManage && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400"
+            disabled={dispatchLoading}
+            onClick={handleEmailDispatch}
+          >
+            {dispatchLoading
+              ? <span className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin mr-1" />
+              : <Zap size={14} className="mr-1" />}
+            {dispatchLoading ? 'পাঠানো হচ্ছে...' : 'পেন্ডিং ইমেইল পাঠান'}
+          </Button>
+        )}
+
         {/* Bulk invitation email button — always visible */}
         <Button
           size="sm"
@@ -245,6 +278,20 @@ export default function VotersTab({ election }) {
           )}
         </span>
       </div>
+
+      {/* n8n dispatch status banner */}
+      {dispatchMsg && (
+        <div className={`flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm ${
+          dispatchMsg.type === 'success'
+            ? 'border-violet-200 bg-violet-50 text-violet-800'
+            : 'border-red-200 bg-red-50 text-red-800'
+        }`}>
+          <span>{dispatchMsg.text}</span>
+          <button onClick={() => setDispatchMsg(null)} className="ml-4 opacity-60 hover:opacity-100">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Bulk send success banner */}
       {bulkSuccess && (
