@@ -60,22 +60,35 @@ class RolesAndPermissionsSeeder extends Seeder
         $superAdmin = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
         $superAdmin->syncPermissions(Permission::all());
 
-        // ─── Org Admin — view elections/voters, view + export results, reports ─
+        // ─── Org Admin — full CRUD within their org ──────────────────────────
         $orgAdmin = Role::firstOrCreate(['name' => 'org_admin', 'guard_name' => 'web']);
         $orgAdmin->syncPermissions([
             'view-organizations',
+            'create-elections',
+            'edit-elections',
+            'delete-elections',
             'view-elections',
+            'manage-voters',
+            'delete-voters',
             'view-voters',
+            'manage-candidates',
+            'manage-posts',
             'view-results',
             'export-results',
             'view-detailed-reports',
+            'send-reset-password',
         ]);
 
-        // ─── Org User — view elections/voters, view results, reports ──────────
+        // ─── Org User — create/edit elections, manage voters, view results ──
         $orgUser = Role::firstOrCreate(['name' => 'org_user', 'guard_name' => 'web']);
         $orgUser->syncPermissions([
+            'create-elections',
+            'edit-elections',
             'view-elections',
+            'manage-voters',
             'view-voters',
+            'manage-candidates',
+            'manage-posts',
             'view-results',
             'view-detailed-reports',
         ]);
