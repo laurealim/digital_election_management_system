@@ -37,7 +37,7 @@ This document is the master work plan for building DEMS. It is updated every tim
 | 18 | Advanced Features | ✅ Done |
 | 19 | Security Hardening | ✅ Done |
 | 20 | Testing | ✅ Done |
-| 21 | Deployment & DevOps | Pending |
+| 21 | Deployment & DevOps | ✅ Done |
 
 ---
 
@@ -1058,20 +1058,53 @@ GET  /api/v1/elections/{election}/results/export/excel
 
 ---
 
-## Phase 21 — Deployment & DevOps
+## Phase 21 — Deployment & DevOps ✅
 
-**Goal**: Production-ready deployment configuration.
+**Goal**: Production-ready deployment on a live server.
+
+> Docker was not used. Deployment is via Git — `git pull` on the server after every push to `main`.
 
 ### Steps:
-- [ ] 21.1 Create `backend/Dockerfile` — PHP 8.3-FPM, composer install, artisan optimize
-- [ ] 21.2 Create `frontend/Dockerfile` — Node build stage + Nginx static serving stage
-- [ ] 21.3 Create `docker-compose.yml` — services: `app` (Laravel), `nginx`, `db` (MySQL 8), `redis`, `queue` (worker)
-- [ ] 21.4 Create `.env.production.example` with all prod-required variables
-- [ ] 21.5 Add `php artisan config:cache`, `route:cache`, `view:cache` to deployment script
-- [ ] 21.6 Create `.github/workflows/deploy.yml` — CI: run tests on push; CD: deploy on merge to main
-- [ ] 21.7 Write `doc/deployment-guide.md` with step-by-step server setup
+- [x] 21.1 Provision Ubuntu 24.04.3 LTS server (Linode, IP: 172.104.183.180)
+- [x] 21.2 Install and configure Apache 2.4.58 — `mod_rewrite` enabled, virtual host configured
+- [x] 21.3 Install PHP 8.4.19 via ondrej/php PPA — all Laravel extensions (mysql, mbstring, xml, curl, zip, bcmath, intl, gd, redis, fpm)
+- [x] 21.4 Install MySQL 8.0.45 — `dems_production` database created, root password set
+- [x] 21.5 Install phpMyAdmin 5.2.1 — accessible at `/phpmyadmin`
+- [x] 21.6 Install Node.js 22.22.2 LTS via NodeSource PPA + npm 10.9.7
+- [x] 21.7 Install Composer 2.9.5 at `/usr/local/bin/composer`
+- [x] 21.8 Install Git 2.43.0; clone repo to `/var/www/dems`; fix safe.directory
+- [x] 21.9 Configure production `.env` — `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=http://172.104.183.180`, file-based cache/session/queue, Gmail SMTP
+- [x] 21.10 Run `composer install --no-dev --optimize-autoloader`
+- [x] 21.11 Run `php artisan key:generate`, `migrate --force`, `db:seed --force`, `storage:link`
+- [x] 21.12 Run `php artisan config:cache && route:cache && view:cache`
+- [x] 21.13 Build frontend — `npm install && npm run build` → `/var/www/dems/frontend/dist`; fixed `VITE_API_BASE_URL` in `.env.production` (base domain only, no `/api/v1` suffix)
+- [x] 21.14 Configure Apache virtual host (`/etc/apache2/sites-available/dems.conf`) — `DocumentRoot` → `frontend/dist`, `FallbackResource /index.html` for SPA, `RewriteRule /api/*` → Laravel backend
+- [x] 21.15 Set file permissions — `storage/` + `bootstrap/cache/` → `www-data:www-data 775`
+- [x] 21.16 Install Supervisor 4.2.5 — 2 queue worker processes (`dems-worker_00`, `dems-worker_01`) running `queue:work --queue=emails,heavy,elections`; config at `/etc/supervisor/conf.d/dems-worker.conf`
+- [x] 21.17 Configure cron scheduler — `/etc/cron.d/dems-scheduler` runs `php artisan schedule:run` every minute as `www-data`
+- [x] 21.18 Configure Gmail SMTP — `smtp.gmail.com:465 SSL`, from `laureal.seu@gmail.com`; tested with live send
+- [x] 21.19 Create `doc/server_config.md` — tracks all server software versions, config paths, credentials, deployment steps, and change log
 
-**Deliverables**: Docker setup, GitHub Actions CI/CD, deployment documentation
+**Deploy workflow (ongoing)**:
+```bash
+# Local — after making changes:
+git add <files> && git commit -m "..." && git push origin main
+
+# Server — to apply changes:
+cd /var/www/dems && git pull origin main
+cd frontend && npm run build          # only if frontend changed
+cd ../backend && php artisan view:clear
+supervisorctl restart dems-worker:*   # only if backend jobs/services changed
+```
+
+**Production URLs**:
+| URL | Purpose |
+|-----|---------|
+| `http://172.104.183.180/` | Frontend (React SPA from `dist/`) |
+| `http://172.104.183.180/api/v1/` | Backend API (Laravel) |
+| `http://172.104.183.180/phpmyadmin` | phpMyAdmin |
+
+**Deliverables**: Live server fully configured, app deployed, queue workers running, scheduler active, Gmail SMTP working, server config tracked in `doc/server_config.md`
 
 ---
 
@@ -1107,3 +1140,14 @@ GET  /api/v1/elections/{election}/results/export/excel
 | 2026-04-01 | All | Assign Moderator feature — Backend: VoterController.toggleModerator() endpoint toggles moderator role on a voter's user (POST /elections/{election}/voters/{voter}/toggle-moderator); gated by super_admin/manage-roles/election_admin; voter index query updated to eager-load user.roles. Frontend: ModeratorsTab component (search, paginated voter list with moderator badge, assign/unassign toggle button); added as conditional tab in ElectionDetail (visible to super_admin + edit-elections permission); toggleModerator API function in voters.js; Bengali + English translations for moderator_tab namespace |
 | 2026-04-01 | All | Two moderator types + Candidate list panel — Backend: `moderator_election` pivot table (migration + User.assignedElections() belongsToMany) for normal-moderator election assignment; AdminUserController.assignedElections/syncAssignedElections endpoints with routes; ModeratorResetPasswordController.elections() merges voter-enrolled + pivot-assigned elections; access checks in voters/updateVoter/generateResetLink now use OR logic (voter enrollment OR pivot assignment). Frontend: adminUsers.js getAssignedElections+syncAssignedElections API; UsersPage AssignElectionsModal (inline expandable row with checkbox list for moderator users); ResetPasswordPage auto-selects election when only 1 (voter-moderator case). VotingPage: CandidateListPanel component showing all candidates grouped by post with selection highlighting; desktop sticky sidebar (w-72/w-80), mobile slide-in drawer with FAB toggle; Bengali + English translations added |
 | 2026-04-04 | All | Live Election Status on Landing Page — Backend: `is_live_display` column on elections table, `system_settings` key-value table (live_refresh_interval default 30s), SystemSetting model (getValue/setValue), PublicLiveElectionController (public endpoint returns live election stats + refresh interval), Admin\LiveElectionController (list active/scheduled elections, toggle live display, update refresh interval); routes: GET public/live-elections, GET/PATCH/PUT admin endpoints. Frontend: LiveElectionsPage (admin panel to toggle live display per election + configure refresh interval), LiveElectionStatus component on landing page (auto-refreshing with countdown timer, circular progress, gradient progress bar, animated LIVE badges, Bengali number formatting), SuperAdminLayout sidebar link added |
+| 2026-04-06 | Phase 17 | n8n email dispatch integration — `email_outbox` table + EmailOutbox model added to store full rendered email body before sending; SendVoterInvitationJob saves to outbox before dispatching; n8n webhook dispatch button added to VotersTab so emails can be re-sent via n8n pipeline |
+| 2026-04-08 | Phase 21 | Server provisioned — Ubuntu 24.04.3 LTS on Linode (172.104.183.180); Apache 2.4.58, PHP 8.4.19, MySQL 8.0.45, phpMyAdmin 5.2.1, Node.js 22.22.2, Composer 2.9.5, Git 2.43.0 installed and configured |
+| 2026-04-08 | Phase 21 | DEMS deployed to production — repo cloned to `/var/www/dems`; production `.env` configured; migrations + seeds run; frontend built to `dist/`; Apache virtual host live; file permissions set |
+| 2026-04-08 | Phase 21 | Queue workers configured — Supervisor 4.2.5 running 2 worker processes (`dems-worker_00/01`) on `emails,heavy,elections` queues; config at `/etc/supervisor/conf.d/dems-worker.conf` |
+| 2026-04-08 | Phase 21 | Cron scheduler configured — `/etc/cron.d/dems-scheduler` runs `php artisan schedule:run` every minute as `www-data`; log at `/var/log/dems-scheduler.log` |
+| 2026-04-09 | Phase 21 | Gmail SMTP configured on production server — `smtp.gmail.com:465 SSL` from `laureal.seu@gmail.com`; tested with live send |
+| 2026-04-09 | Phase 17 | All 5 email templates converted to formal Bengali — voter-invitation, password-reset (setup + reset types), organization-verification, results-published, election-reminder; all Mailable subjects updated to Bengali; voter setup token expiry extended from 60 min to 24 hours |
+| 2026-04-09 | Phase 21 | Production bug fix — frontend `VITE_API_BASE_URL` in `.env.production` had `/api/v1` suffix causing doubled path `/api/v1/api/v1`; fixed to base domain only; frontend rebuilt and redeployed |
+| 2026-04-09 | Phase 4 | RolesAndPermissionsSeeder expanded — `org_admin` and `org_user` now have full CRUD permissions (create/edit/delete-elections, manage-voters, delete-voters, manage-candidates, manage-posts); `org_admin` also gets `send-reset-password` |
+| 2026-04-09 | Phase 6 | Super admin election creation fix — TenantModel creating hook skips auto-assign for super_admin; ElectionController::store() accepts `organization_id` from request when super admin; PostController::store() uses `$election->organization_id` instead of user org; CreateElectionRequest validates `organization_id` as required for super_admin; ElectionForm.jsx shows Organization dropdown for super admin on create |
+| 2026-04-09 | Phase 21 | `doc/server_config.md` created — tracks server software versions, config file paths, deployment checklist, application URLs, production .env key settings, and full change log |
