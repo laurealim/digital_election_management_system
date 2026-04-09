@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api\V1\Election;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class CreateElectionRequest extends FormRequest
 {
@@ -23,6 +24,12 @@ class CreateElectionRequest extends FormRequest
             // 'voting_end_time'    => ['required', 'date_format:H:i', 'after:voting_start_time'],
             'candidate_mode'     => ['sometimes', Rule::in(['selected', 'open'])],
             'allow_multi_post'   => ['sometimes', 'boolean'],
+            'organization_id'    => [
+                Rule::requiredIf(fn () => Auth::user()?->hasRole('super_admin')),
+                'nullable',
+                'integer',
+                'exists:organizations,id',
+            ],
         ];
     }
 

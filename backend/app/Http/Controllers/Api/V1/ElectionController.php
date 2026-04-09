@@ -51,7 +51,9 @@ class ElectionController extends ApiController
     {
         $this->authorize('create', Election::class);
 
-        $election = Election::create([
+        $user = $request->user();
+
+        $data = [
             'name'              => $request->name,
             'description'       => $request->description,
             'election_date'     => $request->election_date,
@@ -60,7 +62,14 @@ class ElectionController extends ApiController
             'candidate_mode'    => $request->input('candidate_mode', 'selected'),
             'allow_multi_post'  => $request->boolean('allow_multi_post', false),
             'status'            => 'draft',
-        ]);
+        ];
+
+        // Super admin has no org — must supply organization_id explicitly
+        if ($user->isSuperAdmin()) {
+            $data['organization_id'] = $request->organization_id;
+        }
+
+        $election = Election::create($data);
 
         return $this->created($election);
     }

@@ -32,7 +32,7 @@ class PostController extends ApiController
         ]);
 
         $post = $election->posts()->create([
-            'organization_id' => $request->user()->organization_id,
+            'organization_id' => $election->organization_id,
             'title'           => $data['title'],
             'description'     => $data['description'] ?? null,
             'max_votes'       => $data['max_votes'] ?? 1,

@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { getElection, createElection, updateElection } from '@/api/elections'
+import { getAdminOrganizations } from '@/api/organizations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,6 +11,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowLeft } from 'lucide-react'
 import useBasePath from '@/hooks/useBasePath'
+import useAuthStore, { isSuperAdmin } from '@/store/authStore'
 
 function minStartDatetime() {
   const ms  = Date.now() + 24 * 60 * 60 * 1000
@@ -33,6 +35,7 @@ export default function ElectionForm() {
   const queryClient = useQueryClient()
   const { t }       = useTranslation()
   const isEdit      = !!id
+  const superAdmin  = useAuthStore(isSuperAdmin)
 
   const minDt = minStartDatetime()
 
@@ -44,6 +47,14 @@ export default function ElectionForm() {
     voting_end_time:   toTimeStr(new Date(minDt.getTime() + 7 * 60 * 60 * 1000)),
     candidate_mode:    'selected',
     allow_multi_post:  false,
+    organization_id:   '',
+  })
+
+  // Fetch org list for super admin org selector (create mode only)
+  const { data: orgsData } = useQuery({
+    queryKey: ['admin-organizations-all'],
+    queryFn:  () => getAdminOrganizations({ per_page: 200 }).then((r) => r.data.data),
+    enabled:  superAdmin && !isEdit,
   })
   const [errors,  setErrors]  = useState({})
   const [loading, setLoading] = useState(false)
@@ -140,6 +151,25 @@ export default function ElectionForm() {
           <CardContent className="space-y-5 pt-6">
             {errors.general && (
               <Alert variant="destructive"><AlertDescription>{errors.general[0]}</AlertDescription></Alert>
+            )}
+
+            {superAdmin && !isEdit && (
+              <div className="space-y-2">
+                <Label htmlFor="organization_id">Organization *</Label>
+                <select
+                  id="organization_id"
+                  value={form.organization_id}
+                  onChange={set('organization_id')}
+                  required
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">— Select Organization —</option>
+                  {(orgsData ?? []).map((org) => (
+                    <option key={org.id} value={org.id}>{org.name}</option>
+                  ))}
+                </select>
+                <FieldError name="organization_id" />
+              </div>
             )}
 
             <div className="space-y-2">
