@@ -26,7 +26,7 @@ class ElectionReminderMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Reminder: ' . $this->election->name . ' starts soon',
+            subject: 'ভোট প্রদানের অনুস্মারক — ' . $this->election->name,
         );
     }
 

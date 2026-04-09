@@ -20,7 +20,7 @@ class OrganizationVerificationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Verify Your DEMS Organization Email');
+        return new Envelope(subject: 'DEMS — প্রতিষ্ঠানের ইমেইল যাচাই করুন');
     }
 
     public function content(): Content

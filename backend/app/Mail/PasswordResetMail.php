@@ -27,8 +27,8 @@ class PasswordResetMail extends Mailable
             . "/{$route}?token={$token}&email=" . urlencode($user->email);
 
         $this->mailSubject = $type === 'setup'
-            ? 'Set Up Your DEMS Password'
-            : 'Reset Your DEMS Password';
+            ? 'DEMS একাউন্ট সেটআপ — পাসওয়ার্ড নির্ধারণ করুন'
+            : 'DEMS একাউন্ট — পাসওয়ার্ড রিসেট অনুরোধ';
     }
 
     public function envelope(): Envelope

@@ -27,7 +27,7 @@ class ResultsPublishedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Results Published: ' . $this->election->name,
+            subject: 'নির্বাচনের ফলাফল প্রকাশিত — ' . $this->election->name,
         );
     }
 
