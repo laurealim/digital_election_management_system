@@ -42,8 +42,8 @@ class PasswordResetService
             return false;
         }
 
-        // Check expiry (60 minutes)
-        if (now()->diffInMinutes($record->created_at, absolute: true) > 60) {
+        // Check expiry (24 hours)
+        if (now()->diffInMinutes($record->created_at, absolute: true) > 1440) {
             return false;
         }
 

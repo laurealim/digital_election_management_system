@@ -29,7 +29,7 @@ class VoterInvitationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'You are invited to vote in: ' . $this->election->name,
+            subject: 'নির্বাচন-২০২৬: DEMS একাউন্ট সেটআপ করুন — ' . $this->election->name,
         );
     }
 

@@ -53,7 +53,7 @@ class SendVoterInvitationJob implements ShouldQueue
         EmailLog::record(
             VoterInvitationMail::class,
             $this->user->email,
-            'You have been invited to vote',
+            'নির্বাচন-২০২৬: DEMS একাউন্ট সেটআপ করুন',
             $this->election->id,
             Election::class,
         );
