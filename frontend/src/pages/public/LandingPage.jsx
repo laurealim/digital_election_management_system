@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getPublicFocalPoints, getPublicLiveElections } from '@/api/publicResults'
-import { Vote, Shield, Users, BarChart2, CheckCircle2, Globe, ArrowRight, Building2, Zap, Lock, Phone, Headset, Search, X, FileDown, Eye, BookOpen, Radio, TrendingUp } from 'lucide-react'
+import { getPublishedElections } from '@/api/nominations'
+import { Vote, Shield, Users, BarChart2, CheckCircle2, Globe, ArrowRight, Building2, Zap, Lock, Phone, Headset, Search, X, FileDown, Eye, BookOpen, Radio, TrendingUp, ClipboardList, SearchCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import PublicNavbar from '@/components/public/PublicNavbar'
 import { useState, useEffect, useRef } from 'react'
 
 // ─── Feature data ─────────────────────────────────────────────────────────────
@@ -68,27 +70,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground">
 
       {/* ─── Header ──────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur border-b px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Vote size={22} className="text-primary" />
-          <span className="text-xl font-bold text-primary">DEMS</span>
-          <span className="hidden sm:inline text-xs text-muted-foreground ml-1">ডিজিটাল নির্বাচন ব্যবস্থাপনা</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link to="/results" className="text-sm text-muted-foreground hover:text-foreground hidden sm:inline">
-            ফলাফল
-          </Link>
-          <Link to="/voter-list" className="text-sm text-muted-foreground hover:text-foreground hidden sm:inline">
-            সদস্য তালিকা
-          </Link>
-          <Link to="/login">
-            <Button variant="ghost" size="sm">লগইন</Button>
-          </Link>
-          {/* <Link to="/register">
-            <Button size="sm">নিবন্ধন করুন</Button>
-          </Link> */}
-        </div>
-      </header>
+      <PublicNavbar />
 
       {/* ─── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-background py-24 px-6 text-center">
@@ -165,6 +147,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ─── Nomination CTA ──────────────────────────────────────────────── */}
+      <NominationCTA />
 
       {/* ─── Features ─────────────────────────────────────────────────────── */}
       {/* <section className="py-20 px-6 bg-muted/30">
@@ -284,13 +269,54 @@ export default function LandingPage() {
         </div>
         <p>ডিজিটাল নির্বাচন ব্যবস্থাপনা সিস্টেম — বাংলাদেশ</p>
         <div className="flex justify-center gap-4 mt-3">
-          <Link to="/results"    className="hover:text-foreground transition-colors">ফলাফল</Link>
-          <Link to="/voter-list" className="hover:text-foreground transition-colors">সদস্য তালিকা</Link>
-          <Link to="/login"    className="hover:text-foreground transition-colors">লগইন</Link>
+          <Link to="/results"      className="hover:text-foreground transition-colors">ফলাফল</Link>
+          <Link to="/voter-list"   className="hover:text-foreground transition-colors">সদস্য তালিকা</Link>
+          <Link to="/nominations"  className="hover:text-foreground transition-colors">মনোনয়ন</Link>
+          <Link to="/login"        className="hover:text-foreground transition-colors">লগইন</Link>
           {/* <Link to="/register" className="hover:text-foreground transition-colors">নিবন্ধন</Link> */}
         </div>
       </footer>
     </div>
+  )
+}
+
+// ─── Nomination CTA (only shown when nominations are open) ───────────────────
+function NominationCTA() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['public-nomination-elections-check'],
+    queryFn: () => getPublishedElections({ per_page: 1 }).then((r) => r.data),
+    staleTime: 60_000,
+  })
+
+  // Hide while loading or if no open elections
+  if (isLoading || !data?.data?.length) return null
+
+  return (
+    <section className="py-12 px-6">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-gradient-to-br from-primary/10 via-background to-primary/5 border rounded-2xl p-8 text-center space-y-5">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary mb-2">
+            <ClipboardList size={28} />
+          </div>
+          <h2 className="text-2xl font-bold">মনোনয়নপত্র জমা দিন</h2>
+          <p className="text-muted-foreground leading-relaxed max-w-xl mx-auto">
+            এড-হক কমিটির নির্বাচনে প্রার্থী হতে মনোনয়নপত্র অনলাইনে জমা দিন। মনোনয়ন জমা দেওয়ার পর আপনার টোকেন নম্বর দিয়ে যেকোনো সময় আবেদনের অবস্থা জানুন।
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center pt-2">
+            <Link to="/nominations">
+              <Button size="lg" className="gap-2">
+                <ClipboardList size={18} /> মনোনয়নপত্র জমা দিন
+              </Button>
+            </Link>
+            <Link to="/nominations/track">
+              <Button size="lg" variant="outline" className="gap-2">
+                <SearchCheck size={18} /> আবেদনের অবস্থা জানুন
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 

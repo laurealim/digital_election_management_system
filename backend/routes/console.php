@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use App\Jobs\PublishElectionJob;
 use App\Jobs\StartElectionJob;
 use App\Jobs\StopElectionJob;
 use App\Jobs\SendElectionReminderJob;
@@ -20,18 +21,25 @@ Schedule::call(function () {
     $now = now();
 
     // Start elections whose scheduled start time has arrived
-    Election::query()
+    Election::withoutGlobalScopes()
         ->where('status', 'scheduled')
         ->whereDate('election_date', $now->toDateString())
         ->whereTime('voting_start_time', '<=', $now->toTimeString())
         ->each(fn (Election $election) => StartElectionJob::dispatch($election));
 
     // Stop elections whose scheduled end time has passed
-    Election::query()
+    Election::withoutGlobalScopes()
         ->where('status', 'active')
         ->whereDate('election_date', $now->toDateString())
         ->whereTime('voting_end_time', '<=', $now->toTimeString())
         ->each(fn (Election $election) => StopElectionJob::dispatch($election));
+
+    // Auto-publish draft elections whose publish_at time has arrived
+    Election::withoutGlobalScopes()
+        ->where('status', 'draft')
+        ->whereNotNull('publish_at')
+        ->where('publish_at', '<=', $now)
+        ->each(fn (Election $election) => PublishElectionJob::dispatch($election));
 
 })->everyMinute()->name('election-lifecycle')->withoutOverlapping();
 
@@ -41,7 +49,7 @@ Schedule::call(function () {
     $windowStart = now()->addHours(24);
     $windowEnd   = now()->addHours(24)->addMinutes(1);
 
-    Election::query()
+    Election::withoutGlobalScopes()
         ->where('status', 'scheduled')
         ->whereDate('election_date', $windowStart->toDateString())
         ->whereBetween('voting_start_time', [

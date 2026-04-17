@@ -60,6 +60,7 @@ class ElectionController extends ApiController
             'voting_start_time' => $request->voting_start_time,
             'voting_end_time'   => $request->voting_end_time,
             'candidate_mode'    => $request->input('candidate_mode', 'selected'),
+            'publish_at'        => $request->publish_at,
             'allow_multi_post'  => $request->boolean('allow_multi_post', false),
             'status'            => 'draft',
         ];
@@ -94,6 +95,7 @@ class ElectionController extends ApiController
             'voting_start_time',
             'voting_end_time',
             'candidate_mode',
+            'publish_at',
             'allow_multi_post',
         ]));
 
@@ -114,7 +116,7 @@ class ElectionController extends ApiController
         $this->authorize('updateStatus', $election);
 
         $request->validate([
-            'status' => ['required', 'in:draft,scheduled,active,completed,cancelled'],
+            'status' => ['required', 'in:draft,published,scheduled,active,completed,cancelled'],
         ]);
 
         $newStatus = $request->status;
@@ -211,7 +213,8 @@ class ElectionController extends ApiController
     private function allowedTransitions(string $current): array
     {
         return match ($current) {
-            'draft'      => ['scheduled', 'cancelled'],
+            'draft'      => ['published', 'scheduled', 'cancelled'],
+            'published'  => ['draft', 'scheduled', 'cancelled'],
             'scheduled'  => ['draft', 'active', 'cancelled'],
             'active'     => ['completed', 'cancelled'],
             default      => [],

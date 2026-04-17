@@ -10,18 +10,20 @@ import { ArrowLeft, Copy, Pencil, Trash2, PlayCircle, StopCircle, XCircle, Calen
 import useBasePath from '@/hooks/useBasePath'
 import useAuthStore, { isSuperAdmin, hasPermission } from '@/store/authStore'
 
-import VotersTab     from '@/components/elections/tabs/VotersTab'
-import PostsTab      from '@/components/elections/tabs/PostsTab'
-import ResultsTab    from '@/components/elections/tabs/ResultsTab'
-import ModeratorsTab from '@/components/elections/tabs/ModeratorsTab'
+import VotersTab       from '@/components/elections/tabs/VotersTab'
+import PostsTab        from '@/components/elections/tabs/PostsTab'
+import ResultsTab      from '@/components/elections/tabs/ResultsTab'
+import ModeratorsTab   from '@/components/elections/tabs/ModeratorsTab'
+import NominationsTab  from '@/components/elections/tabs/NominationsTab'
 
 const STATUS_VARIANTS = {
-  draft: 'secondary', scheduled: 'warning', active: 'success',
+  draft: 'secondary', published: 'info', scheduled: 'warning', active: 'success',
   completed: 'outline', cancelled: 'destructive',
 }
 
 const ALLOWED_TRANSITIONS = {
-  draft:     ['scheduled', 'cancelled'],
+  draft:     ['published', 'scheduled', 'cancelled'],
+  published: ['draft', 'scheduled', 'cancelled'],
   scheduled: ['draft', 'active', 'cancelled'],
   active:    ['completed', 'cancelled'],
 }
@@ -37,6 +39,7 @@ export default function ElectionDetail() {
   const canEdit         = useAuthStore(hasPermission('edit-elections'))
   const canDelete       = useAuthStore(hasPermission('delete-elections'))
   const canCreate       = useAuthStore(hasPermission('create-elections'))
+  const canManageNominations = useAuthStore(hasPermission('manage-nominations'))
 
   const canChangeStatus = superAdmin || canEdit
 
@@ -45,15 +48,17 @@ export default function ElectionDetail() {
     { key: 'voters',    label: t('election.voters') },
     { key: 'posts',     label: t('election.posts_candidates') },
     ...(superAdmin || canEdit ? [{ key: 'moderators', label: t('moderator_tab.title') }] : []),
+    ...(canManageNominations ? [{ key: 'nominations', label: 'মনোনয়ন' }] : []),
     { key: 'results',   label: t('election.results') },
   ]
 
   const TRANSITION_CONFIG = {
-    scheduled: { label: t('election.schedule'),        icon: CalendarClock, variant: 'outline' },
-    draft:     { label: t('election.back_to_draft'),   icon: ArrowLeft,     variant: 'outline' },
-    active:    { label: t('election.start_now'),       icon: PlayCircle,    variant: 'default'  },
-    completed: { label: t('election.mark_completed'),  icon: StopCircle,    variant: 'outline' },
-    cancelled: { label: t('election.cancel_election'), icon: XCircle,       variant: 'destructive' },
+    published: { label: 'মনোনয়নে প্রকাশ করুন',         icon: CalendarClock, variant: 'outline' },
+    scheduled: { label: t('election.schedule'),          icon: CalendarClock, variant: 'outline' },
+    draft:     { label: t('election.back_to_draft'),     icon: ArrowLeft,     variant: 'outline' },
+    active:    { label: t('election.start_now'),         icon: PlayCircle,    variant: 'default'  },
+    completed: { label: t('election.mark_completed'),    icon: StopCircle,    variant: 'outline' },
+    cancelled: { label: t('election.cancel_election'),   icon: XCircle,       variant: 'destructive' },
   }
 
   const { data: election, isLoading } = useQuery({
@@ -89,10 +94,10 @@ export default function ElectionDetail() {
   if (!election) return <div className="p-6 text-destructive text-sm">{t('election.not_found')}</div>
 
   const transitions    = ALLOWED_TRANSITIONS[election.status] ?? []
-  const isEditable     = ['draft', 'scheduled'].includes(election.status)
+  const isEditable     = ['draft', 'published', 'scheduled'].includes(election.status)
 
   const statusLabels = {
-    draft: t('election.draft'), scheduled: t('election.scheduled'),
+    draft: t('election.draft'), published: 'প্রকাশিত', scheduled: t('election.scheduled'),
     active: t('election.active'), completed: t('election.completed'), cancelled: t('election.cancelled'),
   }
 
@@ -185,11 +190,12 @@ export default function ElectionDetail() {
       </div>
 
       <div>
-        {tab === 'overview'    && <OverviewTab election={election} />}
-        {tab === 'voters'      && <VotersTab election={election} />}
-        {tab === 'posts'       && <PostsTab election={election} />}
-        {tab === 'moderators'  && <ModeratorsTab election={election} />}
-        {tab === 'results'     && <ResultsTab election={election} />}
+        {tab === 'overview'     && <OverviewTab election={election} />}
+        {tab === 'voters'       && <VotersTab election={election} />}
+        {tab === 'posts'        && <PostsTab election={election} />}
+        {tab === 'moderators'   && <ModeratorsTab election={election} />}
+        {tab === 'nominations'  && <NominationsTab election={election} />}
+        {tab === 'results'      && <ResultsTab election={election} />}
       </div>
     </div>
   )

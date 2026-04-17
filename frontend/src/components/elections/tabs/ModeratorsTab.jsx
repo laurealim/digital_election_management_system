@@ -25,7 +25,7 @@ export default function ModeratorsTab({ election }) {
   const toggleMutation = useMutation({
     mutationFn: (voterId) => toggleModerator(election.id, voterId),
     onSuccess: () => {
-      queryClient.invalidateQueries(qKey)
+      queryClient.invalidateQueries({ queryKey: qKey })
       setTogglingId(null)
     },
     onError: () => setTogglingId(null),

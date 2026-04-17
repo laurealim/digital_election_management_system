@@ -35,7 +35,7 @@ export default function Organizations() {
 
   const toggle = useMutation({
     mutationFn: (id) => toggleOrganizationStatus(id),
-    onSuccess:  () => queryClient.invalidateQueries(['admin-organizations']),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['admin-organizations'] }),
   })
 
   const orgs  = data?.data ?? []
@@ -126,7 +126,7 @@ export default function Organizations() {
           onClose={() => setShowCreate(false)}
           onCreated={() => {
             setShowCreate(false)
-            queryClient.invalidateQueries(['admin-organizations'])
+            queryClient.invalidateQueries({ queryKey: ['admin-organizations'] })
           }}
         />
       )}

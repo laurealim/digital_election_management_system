@@ -16,11 +16,14 @@ import ResetPassword   from '@/pages/auth/ResetPassword'
 import SetupPassword   from '@/pages/auth/SetupPassword'
 
 // Public pages
-import LandingPage              from '@/pages/public/LandingPage'
-import RegisterOrganization     from '@/pages/public/RegisterOrganization'
-import PublicResultsListPage    from '@/pages/public/PublicResultsListPage'
-import PublicElectionResultPage from '@/pages/public/PublicElectionResultPage'
-import PublicVoterListPage     from '@/pages/public/PublicVoterListPage'
+import LandingPage                from '@/pages/public/LandingPage'
+import RegisterOrganization       from '@/pages/public/RegisterOrganization'
+import PublicResultsListPage      from '@/pages/public/PublicResultsListPage'
+import PublicElectionResultPage   from '@/pages/public/PublicElectionResultPage'
+import PublicVoterListPage        from '@/pages/public/PublicVoterListPage'
+import NominationsPortalPage      from '@/pages/public/NominationsPortalPage'
+import NominationApplyPage        from '@/pages/public/NominationApplyPage'
+import NominationTrackPage        from '@/pages/public/NominationTrackPage'
 
 // Super admin pages
 import AdminOrganizations from '@/pages/admin/Organizations'
@@ -52,7 +55,10 @@ const router = createBrowserRouter([
   { path: '/',                 element: <LandingPage /> },
   { path: '/results',          element: <PublicResultsListPage /> },
   { path: '/results/:id',      element: <PublicElectionResultPage /> },
-  { path: '/voter-list',         element: <PublicVoterListPage /> },
+  { path: '/voter-list',                        element: <PublicVoterListPage /> },
+  { path: '/nominations',                       element: <NominationsPortalPage /> },
+  { path: '/nominations/track',                 element: <NominationTrackPage /> },
+  { path: '/nominations/:electionId/apply',     element: <NominationApplyPage /> },
   { path: '/login',            element: <Login /> },
   { path: '/forgot-password',  element: <ForgotPassword /> },
   { path: '/reset-password',   element: <ResetPassword /> },

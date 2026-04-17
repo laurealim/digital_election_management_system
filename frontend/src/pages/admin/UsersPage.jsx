@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getStaffUsers, createStaffUser, updateStaffUser, updateStaffRole, toggleUserStatus, resendSetupEmail, getAssignedElections, syncAssignedElections } from '@/api/adminUsers'
+import { getStaffUsers, createStaffUser, updateStaffUser, updateStaffRole, toggleUserStatus, resendSetupEmail, generateUserResetLink, getAssignedElections, syncAssignedElections } from '@/api/adminUsers'
 import { getOrganizationsList, getElectionsList } from '@/api/roles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   UserPlus, Search, Loader2, ChevronLeft, ChevronRight,
   Pencil, Trash2, X, Check, Mail, Send, CheckCircle2, XCircle, Clock, CalendarDays,
+  KeyRound, Copy, CopyCheck,
 } from 'lucide-react'
 
 function MailStatusBadge({ status }) {
@@ -256,6 +257,7 @@ function UserRow({ user, orgs, onUpdated }) {
   const [confirm,     setConfirm]     = useState(false)
   const [emailStatus, setEmailStatus] = useState(user.setup_email_status ?? null)
   const [showAssignElections, setShowAssignElections] = useState(false)
+  const [showResetLink,       setShowResetLink]       = useState(false)
 
   const userRoles = user.roles ?? []
   const isModerator = userRoles.includes('moderator')
@@ -448,6 +450,13 @@ function UserRow({ user, orgs, onUpdated }) {
                   ? <Check size={14} className="text-green-600" />
                   : <Mail size={14} />}
             </button>
+            <button
+              onClick={() => setShowResetLink(true)}
+              title="পাসওয়ার্ড রিসেট লিঙ্ক তৈরি করুন"
+              className="text-muted-foreground hover:text-amber-600 transition-colors"
+            >
+              <KeyRound size={14} />
+            </button>
             {isModerator && (
               <button
                 onClick={() => setShowAssignElections(true)}
@@ -480,7 +489,102 @@ function UserRow({ user, orgs, onUpdated }) {
         />
       </td></tr>
     )}
+    {showResetLink && (
+      <ResetLinkModal
+        userId={user.id}
+        userName={user.name}
+        onClose={() => setShowResetLink(false)}
+      />
+    )}
     </>
+  )
+}
+
+// ─── Reset Link Modal ─────────────────────────────────────────────────────────
+function ResetLinkModal({ userId, userName, onClose }) {
+  const [copied, setCopied] = useState(false)
+
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['user-reset-link', userId],
+    queryFn:  () => generateUserResetLink(userId).then((r) => r.data.data),
+    staleTime: 0,
+    retry: false,
+  })
+
+  function copyLink() {
+    navigator.clipboard.writeText(data.reset_link)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-background rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="flex items-center gap-2">
+            <KeyRound size={16} className="text-amber-500" />
+            <h2 className="font-bold text-base">পাসওয়ার্ড রিসেট লিঙ্ক</h2>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4">
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground py-4 justify-center">
+              <Loader2 size={16} className="animate-spin" />
+              <span className="text-sm">লিঙ্ক তৈরি হচ্ছে…</span>
+            </div>
+          ) : isError ? (
+            <div className="text-destructive text-sm text-center py-4">
+              {error?.response?.data?.message || 'লিঙ্ক তৈরি করতে ব্যর্থ হয়েছে।'}
+            </div>
+          ) : (
+            <>
+              <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 space-y-1">
+                <p className="text-xs text-amber-700 font-medium">ব্যবহারকারী</p>
+                <p className="font-semibold text-sm">{data.user_name}</p>
+                <p className="text-xs text-muted-foreground">{data.user_email}</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">রিসেট লিঙ্ক (৬০ মিনিট কার্যকর)</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={data.reset_link}
+                    className="flex-1 border rounded-lg px-3 py-2 text-xs bg-muted font-mono text-muted-foreground truncate"
+                  />
+                  <button
+                    onClick={copyLink}
+                    className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                      copied
+                        ? 'bg-green-50 border-green-300 text-green-700'
+                        : 'bg-background border-input hover:bg-muted text-foreground'
+                    }`}
+                  >
+                    {copied
+                      ? <><CopyCheck size={13} /> কপি হয়েছে</>
+                      : <><Copy size={13} /> কপি করুন</>}
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                এই লিঙ্কটি ব্যবহারকারীকে পাঠান। লিঙ্কটি ব্যবহার করে তিনি নতুন পাসওয়ার্ড সেট করতে পারবেন।
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="px-6 pb-5">
+          <Button variant="outline" size="sm" onClick={onClose} className="w-full">বন্ধ করুন</Button>
+        </div>
+      </div>
+    </div>
   )
 }
 

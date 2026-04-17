@@ -2,8 +2,8 @@
 
 **Project**: Multi-Tenant SaaS Election Management System (DEMS)
 **Stack**: Laravel 12 (Backend API) + React (Frontend SPA)
-**Last Updated**: 2026-03-29
-**Status**: In Progress — Phase 21
+**Last Updated**: 2026-04-12
+**Status**: In Progress — Phase 22 complete + post-release fixes + nomination_type consolidation
 
 ---
 
@@ -38,6 +38,7 @@ This document is the master work plan for building DEMS. It is updated every tim
 | 19 | Security Hardening | ✅ Done |
 | 20 | Testing | ✅ Done |
 | 21 | Deployment & DevOps | ✅ Done |
+| 22 | Nomination-Based Candidate System | ✅ Done |
 
 ---
 
@@ -1108,6 +1109,81 @@ supervisorctl restart dems-worker:*   # only if backend jobs/services changed
 
 ---
 
+## Phase 22 — Nomination-Based Candidate System ✅
+
+**Goal**: Add a complete nomination workflow for elections where `candidate_mode = nominated`. Only Election Commission (EC) and Super Admin can manage nominations.
+
+**Branch**: `nomination`
+
+### Steps:
+- [x] 22.1 DB migration — alter elections table: add `published` + `cancelled` to status enum, `nominated` to candidate_mode enum, new columns `nomination_type` (single/multiple) and `publish_at`
+- [x] 22.2 DB migration — create `nominations` table (token_number, name, email, mobile, organization_name, status, rejection_reason, payment_status, payment_verified_at, approved_by)
+- [x] 22.3 DB migration — create `nomination_posts` pivot table (nomination_id, post_id)
+- [x] 22.4 DB migration — create `nomination_status_logs` table (append-only audit trail)
+- [x] 22.5 Models — `Nomination` (extends TenantModel, `generateToken()`, `logTransition()`, relationships), `NominationStatusLog` (append-only, no updated_at)
+- [x] 22.6 Election model — added `isPublished()`, `isNominationOpen()`, updated `isEditable()` (includes `published`), `nominations()` hasMany
+- [x] 22.7 User model — added `isElectionCommission()` helper, updated `isElectionManager()` to include `election_commission`
+- [x] 22.8 Roles & Permissions — new `manage-nominations` permission, new `election_commission` Spatie role; seeder updated
+- [x] 22.9 `NominationPolicy` — org-scoped access for EC: viewAny/view/verify/reject/markPaid/accept; super_admin bypasses all
+- [x] 22.10 `PublicNominationController` — public endpoints: `elections()` (list published), `store()` (apply with token gen + duplicate check + single/multi validation), `track()` (by token or email+mobile), `downloadPdf()` (DomPDF)
+- [x] 22.11 `NominationController` — EC endpoints: index (with filters), show (with logs), verify, reject (reason required), markPaid, accept
+- [x] 22.12 `ElectionController` — updated: accepts `nomination_type` + `publish_at` in store/update, extended `allowedTransitions()` to include `published` state, updated status validation
+- [x] 22.13 `PublishElectionJob` — mirrors StartElectionJob; transitions `draft → published` at `publish_at` time
+- [x] 22.14 `ElectionObserver` — dispatches `PublishElectionJob` with delay when `publish_at` is set on a draft election
+- [x] 22.15 `console.php` scheduler safety-net — auto-publishes drafts whose `publish_at` has passed (runs every minute)
+- [x] 22.16 Form requests — `StoreNominationRequest` (public); updated `CreateElectionRequest` + `UpdateElectionRequest` (nomination_type required when mode=nominated, publish_at datetime)
+- [x] 22.17 API routes — 4 public nomination routes under `/public/`; 6 EC management routes under `/elections/{election}/nominations/` with `permission:manage-nominations` middleware
+- [x] 22.18 PDF Blade template — `resources/views/pdf/nomination-form.blade.php` (A4 portrait, Bengali, DOA blue header, token box, status badge, status log)
+- [x] 22.19 Frontend `api/nominations.js` — full API client (public + EC endpoints)
+- [x] 22.20 `NominationsPortalPage.jsx` — public page at `/nominations`; lists published elections with Apply buttons + track link
+- [x] 22.21 `NominationApplyPage.jsx` — public page at `/nominations/:electionId/apply`; form → submit → token success screen with PDF download
+- [x] 22.22 `NominationTrackPage.jsx` — public page at `/nominations/track`; search by token or email+mobile; shows status timeline + PDF download
+- [x] 22.23 `NominationsTab.jsx` — EC tab in ElectionDetail; status filter tabs, search, action buttons (verify/reject/mark-paid/accept), inline reject modal, PDF download per row
+- [x] 22.24 `ElectionDetail.jsx` — added Nominations tab (EC + super_admin only), `published` status variant, new transition buttons
+- [x] 22.25 `ElectionForm.jsx` — added `nominated` radio option, conditional `nomination_type` radio group, optional `publish_at` datetime input
+- [x] 22.26 `router/index.jsx` — 3 public nomination routes added; `election_commission` added to `MANAGEMENT_ROLES`
+- [x] 22.27 `RoleGuard.jsx` + `OrgAdminLayout.jsx` — `election_commission` added to management roles; title set to "নির্বাচন কমিশন"
+- [x] 22.28 Migrations run locally; seeder re-run; frontend build passes
+- [x] 22.29 Bug fix — `logTransition()` signature changed to `?string $fromStatus` to accept null on initial submission
+- [x] 22.30 Bug fix — `PublicNominationController::store()` wrapped in `DB::transaction()` to prevent orphaned nominations on partial failure; duplicate-check now works correctly
+- [x] 22.31 Bug fix — Bengali PDF font rendering: manually registered Kalpurush font (normal + bold) via FontLib into `storage/fonts/`; `@font-face` with `file:///` prefix in nomination-form.blade.php; removed uppercase/letter-spacing from section titles
+- [x] 22.32 Role consolidation — removed `election_commission` role entirely; `election_admin` now carries `manage-nominations` permission; all backend/frontend references updated (User model helpers, RoleGuard, OrgAdminLayout, router, RolesAndPermissionsSeeder)
+- [x] 22.33 Auto-candidate on acceptance — `NominationController::accept()` wrapped in DB::transaction; on accept: auto-creates User (firstOrCreate by email), assigns `candidate` role, enrolls as Voter (firstOrCreate), creates Candidate record per applied post
+- [x] 22.34 পদ ও প্রার্থী tab — `canEdit()` in PostsTab extended to include `published` status for nominated-mode elections so accepted candidates are visible and manageable
+- [x] 22.35 Nominated-mode candidate dropdown — `acceptedForPost` endpoint added (`GET /elections/{election}/posts/{post}/accepted-nominations`); returns only accepted nominations not yet assigned as candidates for the post; frontend `CandidatesPanel` refactored: mode-aware data fetching (accepted nominees for nominated mode vs all voters for selected mode); `getAcceptedNomineesForPost` added to `api/nominations.js`
+- [x] 22.36 Bug fix — removed candidates reappearing in dropdown: two-part fix: (1) `NominationController::acceptedForPost()` replaced `whereHas('posts', ...)` (which injected TenantScope into subquery) with raw `whereExists` on `nomination_posts` pivot table; (2) React Query v5 syntax fix across PostsTab/VotersTab/ModeratorsTab/Organizations — all `invalidateQueries([...])` calls updated to `invalidateQueries({ queryKey: [...] })`; `staleTime: 0` on accepted-nominees query
+- [x] 22.37 Landing page — nomination CTA section added with "মনোনয়নপত্র জমা দিন" and "আবেদনের অবস্থা জানুন" buttons; "মনোনয়ন" added to header nav and footer links
+- [x] 22.38 Field consolidation — removed redundant `nomination_type` enum ('single'/'multiple'); `allow_multi_post` boolean now controls both candidate multi-post assignment and nomination multi-post selection; migration drops the column; Election model, form requests, ElectionController, PublicNominationController, ElectionForm.jsx, NominationApplyPage.jsx all updated
+
+### Election Status Lifecycle (Updated):
+```
+Draft → Published → Scheduled → Active → Completed
+                  ↘                    ↘
+                Cancelled            Cancelled
+```
+
+### Nomination Status Flow (Strict):
+```
+Pending → Verified (Waiting for Payment) → Accepted
+                    ↓
+                 Rejected
+```
+
+### Public URLs (no auth):
+| URL | Purpose |
+|-----|---------|
+| `/nominations` | Browse elections open for nomination |
+| `/nominations/:id/apply` | Submit nomination form |
+| `/nominations/track` | Track nomination by token or email+mobile |
+| `/api/v1/public/elections` | List published elections API |
+| `/api/v1/public/nominations` | Submit nomination API |
+| `/api/v1/public/nominations/track` | Track nomination API |
+| `/api/v1/public/nominations/{token}/pdf` | Download PDF nomination form |
+
+**Deliverables**: Full nomination workflow — public portal, EC management dashboard, PDF form, token-based tracking, auto-publish job, strict status machine
+
+---
+
 ## Change Log
 
 | Date | Phase | Change Description |
@@ -1151,3 +1227,6 @@ supervisorctl restart dems-worker:*   # only if backend jobs/services changed
 | 2026-04-09 | Phase 4 | RolesAndPermissionsSeeder expanded — `org_admin` and `org_user` now have full CRUD permissions (create/edit/delete-elections, manage-voters, delete-voters, manage-candidates, manage-posts); `org_admin` also gets `send-reset-password` |
 | 2026-04-09 | Phase 6 | Super admin election creation fix — TenantModel creating hook skips auto-assign for super_admin; ElectionController::store() accepts `organization_id` from request when super admin; PostController::store() uses `$election->organization_id` instead of user org; CreateElectionRequest validates `organization_id` as required for super_admin; ElectionForm.jsx shows Organization dropdown for super admin on create |
 | 2026-04-09 | Phase 21 | `doc/server_config.md` created — tracks server software versions, config file paths, deployment checklist, application URLs, production .env key settings, and full change log |
+| 2026-04-11 | Phase 22 | Nomination system — DB: 4 migrations (elections enum altered + `published`/`cancelled` status + `nominated` candidate_mode + `nomination_type` + `publish_at`; nominations, nomination_posts, nomination_status_logs tables). Backend: Nomination + NominationStatusLog models, NominationPolicy, PublicNominationController (public: list elections, apply, track, PDF), NominationController (EC: index/show/verify/reject/mark-paid/accept), PublishElectionJob + observer hook, scheduler safety-net, election status machine extended (draft→published→scheduled→active→completed), new `manage-nominations` permission, new `election_commission` Spatie role, StoreNominationRequest, updated CreateElectionRequest + UpdateElectionRequest, PDF blade template (nomination-form.blade.php), 9 new API routes. Frontend: nominations.js API module, NominationsPortalPage (public election list), NominationApplyPage (apply form + token success screen + PDF download), NominationTrackPage (track by token/email+mobile), NominationsTab (EC dashboard with filter/verify/reject/pay/accept + inline reject modal), ElectionDetail updated (Nominations tab, published status, new transitions), ElectionForm updated (nominated mode + nomination_type radio + publish_at datetime), router (3 public routes + election_commission in management roles), RoleGuard + OrgAdminLayout updated. Branch: nomination |
+| 2026-04-12 | Phase 22 | Post-release bug fixes — (1) logTransition null fix: `?string` type on fromStatus; (2) duplicate nomination fix: DB::transaction in store(); (3) Bengali PDF font: Kalpurush registered via FontLib (normal + bold) in storage/fonts/, file:/// path in blade; (4) Role consolidation: election_commission removed, election_admin gains manage-nominations permission, all 6 references updated across backend + frontend; (5) Auto-candidate on accept: User/Voter/Candidate auto-created in transaction on nomination acceptance; (6) canEdit() extended to include published+nominated mode; (7) acceptedForPost endpoint + CandidatesPanel refactor for mode-aware dropdown (accepted nominees vs all voters); (8) Dropdown reappear fix: whereHas→whereExists to bypass TenantScope in subquery; React Query v5 syntax fixed across 4 files (invalidateQueries object syntax); staleTime:0 on accepted-nominees query; (9) Landing page nomination CTA section added |
+| 2026-04-12 | Phase 22 | Field consolidation — `nomination_type` enum column removed from elections table; `allow_multi_post` boolean now covers both candidate multi-post assignment and nomination multi-post selection (`true` = allow multiple posts). Migration `2026_04_12_000001_remove_nomination_type_from_elections_table` run. Updated: Election.$fillable, CreateElectionRequest, UpdateElectionRequest, ElectionController (store + update), PublicNominationController (single-post guard), ElectionForm.jsx (removed radio group + state), NominationApplyPage.jsx (isSingle = !allow_multi_post) |

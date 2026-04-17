@@ -6,6 +6,7 @@ import {
   getCandidates, addCandidate, removeCandidate,
 } from '@/api/posts'
 import { getVoters } from '@/api/voters'
+import { getAcceptedNomineesForPost } from '@/api/nominations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,7 +15,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Plus, Pencil, Trash2, UserPlus, X, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import useAuthStore, { isSuperAdmin, hasPermission } from '@/store/authStore'
 
-const canEdit = (election) => ['draft', 'scheduled'].includes(election.status)
+// 'published' is also editable for nominated-mode elections (nomination phase)
+const canEdit = (election) =>
+  ['draft', 'scheduled'].includes(election.status) ||
+  (election.status === 'published' && election.candidate_mode === 'nominated')
 
 export default function PostsTab({ election }) {
   const queryClient = useQueryClient()
@@ -38,7 +42,7 @@ export default function PostsTab({ election }) {
 
   const deleteMutation = useMutation({
     mutationFn: (postId) => deletePost(election.id, postId),
-    onSuccess:  () => queryClient.invalidateQueries(qKey),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: qKey }),
   })
 
   function toggleExpand(postId) {
@@ -96,7 +100,7 @@ export default function PostsTab({ election }) {
           post={editingPost}
           onClose={() => setShowAddPost(false)}
           onSuccess={() => {
-            queryClient.invalidateQueries(qKey)
+            queryClient.invalidateQueries({ queryKey: qKey })
             setShowAddPost(false)
           }}
         />
@@ -152,10 +156,11 @@ function PostCard({ post, election, editable, canManagePosts, canManageCands, is
 }
 
 function CandidatesPanel({ election, post, editable, canManageCands, isOpen, queryClient }) {
-  const { t }      = useTranslation()
-  const cKey       = ['candidates', election.id, post.id]
-  const [voterSearch, setVoterSearch] = useState('')
-  const [showAssign,  setShowAssign]  = useState(false)
+  const { t }          = useTranslation()
+  const isNominated    = election.candidate_mode === 'nominated'
+  const cKey           = ['candidates', election.id, post.id]
+  const [search, setSearch]         = useState('')
+  const [showAssign, setShowAssign] = useState(false)
 
   const { data: candidates = [], isLoading } = useQuery({
     queryKey: cKey,
@@ -165,35 +170,56 @@ function CandidatesPanel({ election, post, editable, canManageCands, isOpen, que
   const removeMutation = useMutation({
     mutationFn: (candidateId) => removeCandidate(election.id, post.id, candidateId),
     onSuccess:  () => {
-      queryClient.invalidateQueries(cKey)
-      queryClient.invalidateQueries(['posts', election.id])
+      queryClient.invalidateQueries({ queryKey: cKey })
+      queryClient.invalidateQueries({ queryKey: ['posts', election.id] })
+      // refresh nominee list so removed candidate reappears in dropdown
+      queryClient.invalidateQueries({ queryKey: ['accepted-nominees', election.id, post.id], refetchType: 'all' })
     },
   })
 
   const addMutation = useMutation({
     mutationFn: (userId) => addCandidate(election.id, post.id, { user_id: userId }),
     onSuccess:  () => {
-      queryClient.invalidateQueries(cKey)
-      queryClient.invalidateQueries(['posts', election.id])
-      setVoterSearch('')
+      queryClient.invalidateQueries({ queryKey: cKey })
+      queryClient.invalidateQueries({ queryKey: ['posts', election.id] })
+      queryClient.invalidateQueries({ queryKey: ['accepted-nominees', election.id, post.id], refetchType: 'all' })
+      setSearch('')
     },
   })
 
-  const { data: allVoters = [] } = useQuery({
+  // ── For nominated mode: fetch only accepted nominees for this post ──────────
+  const { data: acceptedNominees = [], isLoading: nomineesLoading } = useQuery({
+    queryKey: ['accepted-nominees', election.id, post.id],
+    queryFn:  () => getAcceptedNomineesForPost(election.id, post.id).then((r) => r.data.data),
+    enabled:  showAssign && isNominated,
+    staleTime: 0,
+  })
+
+  // ── For selected mode: fetch all voters ────────────────────────────────────
+  const { data: allVoters = [], isLoading: votersLoading } = useQuery({
     queryKey: ['all-voters', election.id],
     queryFn:  () => getVoters(election.id, { per_page: 500 }).then((r) => r.data.data ?? []),
-    enabled:  showAssign && !isOpen,
+    enabled:  showAssign && !isOpen && !isNominated,
     staleTime: 30_000,
   })
 
   const assignedUserIds = new Set(candidates.map((c) => c.user?.id))
 
-  const filteredVoters = allVoters.filter((v) => {
-    if (assignedUserIds.has(v.user?.id)) return false
-    if (!voterSearch) return true
-    const q = voterSearch.toLowerCase()
-    return v.user?.name?.toLowerCase().includes(q) || v.user?.email?.toLowerCase().includes(q)
-  })
+  // Filter logic differs by mode
+  const dropdownItems = isNominated
+    ? acceptedNominees.filter((n) => {
+        if (!search) return true
+        const q = search.toLowerCase()
+        return n.name?.toLowerCase().includes(q) || n.email?.toLowerCase().includes(q)
+      })
+    : allVoters.filter((v) => {
+        if (assignedUserIds.has(v.user?.id)) return false
+        if (!search) return true
+        const q = search.toLowerCase()
+        return v.user?.name?.toLowerCase().includes(q) || v.user?.email?.toLowerCase().includes(q)
+      })
+
+  const dropdownLoading = isNominated ? nomineesLoading : votersLoading
 
   if (isLoading) return <div className="px-4 py-3 text-sm text-muted-foreground">{t('post.loading_candidates')}</div>
 
@@ -242,49 +268,61 @@ function CandidatesPanel({ election, post, editable, canManageCands, isOpen, que
                   <div className="flex items-center gap-2">
                     <Input
                       autoFocus
-                      placeholder={t('post.search_voters_placeholder')}
-                      value={voterSearch}
-                      onChange={(e) => setVoterSearch(e.target.value)}
+                      placeholder={isNominated ? 'গৃহীত প্রার্থী খুঁজুন…' : t('post.search_voters_placeholder')}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
                       className="h-8 text-sm"
                     />
                     <Button variant="ghost" size="icon"
-                      onClick={() => { setShowAssign(false); setVoterSearch('') }}>
+                      onClick={() => { setShowAssign(false); setSearch('') }}>
                       <X size={14} />
                     </Button>
                   </div>
 
                   <div className="border rounded-lg text-sm max-h-48 overflow-y-auto bg-card shadow-sm">
-                    {allVoters.length === 0 ? (
+                    {dropdownLoading ? (
                       <p className="px-3 py-2 text-muted-foreground text-xs flex items-center gap-2">
                         <Loader2 size={12} className="animate-spin" /> {t('common.loading')}
                       </p>
-                    ) : filteredVoters.length === 0 ? (
+                    ) : dropdownItems.length === 0 ? (
                       <p className="px-3 py-2 text-muted-foreground text-xs">
-                        {voterSearch ? t('post.no_match') : t('post.all_assigned')}
+                        {search
+                          ? t('post.no_match')
+                          : isNominated
+                            ? 'এই পদের জন্য সকল গৃহীত প্রার্থী নির্ধারিত হয়েছে।'
+                            : t('post.all_assigned')}
                       </p>
                     ) : (
-                      filteredVoters.map((v) => (
-                        <button
-                          key={v.id}
-                          disabled={addMutation.isPending}
-                          className="w-full text-left px-3 py-2 hover:bg-muted/50 flex items-center justify-between gap-2 border-b last:border-0"
-                          onClick={() => addMutation.mutate(v.user?.id)}
-                        >
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{v.user?.name}</p>
-                            {v.user?.designation && (
-                              <p className="text-xs text-muted-foreground truncate">{v.user.designation}</p>
-                            )}
-                          </div>
-                          <span className="text-muted-foreground text-xs shrink-0">{v.user?.email}</span>
-                        </button>
-                      ))
+                      dropdownItems.map((item) => {
+                        const userId   = isNominated ? item.user_id   : item.user?.id
+                        const name     = isNominated ? item.name      : item.user?.name
+                        const email    = isNominated ? item.email     : item.user?.email
+                        const subtitle = isNominated ? null           : item.user?.designation
+                        return (
+                          <button
+                            key={isNominated ? item.nomination_id : item.id}
+                            disabled={addMutation.isPending}
+                            className="w-full text-left px-3 py-2 hover:bg-muted/50 flex items-center justify-between gap-2 border-b last:border-0"
+                            onClick={() => addMutation.mutate(userId)}
+                          >
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{name}</p>
+                              {subtitle && (
+                                <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+                              )}
+                            </div>
+                            <span className="text-muted-foreground text-xs shrink-0">{email}</span>
+                          </button>
+                        )
+                      })
                     )}
                   </div>
 
-                  <p className="text-xs text-muted-foreground">
-                    {t('post.voters_available', { count: filteredVoters.length })}
-                  </p>
+                  {!isNominated && (
+                    <p className="text-xs text-muted-foreground">
+                      {t('post.voters_available', { count: dropdownItems.length })}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

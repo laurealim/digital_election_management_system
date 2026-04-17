@@ -232,6 +232,24 @@ class UserController extends ApiController
     }
 
     /**
+     * POST /api/v1/admin/users/{user}/generate-reset-link
+     * Generate a password reset link for any staff user — returns URL, no email sent.
+     */
+    public function generateResetLink(User $user): JsonResponse
+    {
+        $token = $this->passwordResetService->generateToken($user->email, 'reset');
+
+        $frontendUrl = rtrim(config('app.frontend_url', 'http://localhost:5173'), '/');
+        $resetLink   = $frontendUrl . '/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+
+        return $this->success([
+            'reset_link' => $resetLink,
+            'user_name'  => $user->name,
+            'user_email' => $user->email,
+        ], 'Password reset link generated successfully.');
+    }
+
+    /**
      * GET /api/v1/admin/users/{user}/assigned-elections
      * List elections assigned to a moderator user.
      */

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 See [requirements.md](requirements.md) for full spec and [doc/workflow.md](doc/workflow.md) for the step-by-step build plan.
 
-**Current Status**: Phase 21 — Full role system, landing page, Bengali i18n, and role management UI complete.
+**Current Status**: Phase 22 complete (branch: `nomination`) — Nomination system + all post-release fixes done. Public nomination portal, EC dashboard (election_admin role), PDF form, token tracking, auto-publish job, auto-candidate-on-accept, mode-aware candidate dropdown. `nomination_type` field removed — `allow_multi_post` now covers both purposes.
 
 ## Tech Stack
 
@@ -75,14 +75,16 @@ All API controllers extend `app/Http/Controllers/Api/V1/ApiController.php`. Use 
 - **super_admin** — full access, manages all orgs/elections via `/admin/*` routes
 - **org_admin** — full CRUD within their org (elections, voters, posts, candidates, results)
 - **org_user** — create/edit elections (no delete), manage voters, view results
-- **election_admin** — manage voters + posts + candidates within elections, view results
+- **election_admin** — manage voters + posts + candidates + nominations within elections, view results; has `manage-nominations` permission so can act as Election Commission
 - **election_user** — manage voters (no delete), view results
 - **voter** — cast vote, view published results
 - **candidate** — cast vote, view results, view own candidate vote tally (`/results/mine`)
 
+Note: `election_commission` role was removed — its nomination management capability is now covered by `election_admin` via the `manage-nominations` permission.
+
 Route-level protection uses `->middleware('role:super_admin')` or `'role:super_admin|org_admin'`. Policy-level in `app/Policies/`.
 
-`User` model helpers: `isSuperAdmin()`, `isOrgAdmin()`, `isOrgUser()`, `isElectionAdmin()`, `isElectionUser()`, `isVoter()`, `isCandidate()`, `isOrgManager()` (org_admin/org_user/super_admin), `isElectionManager()` (all mgmt roles).
+`User` model helpers: `isSuperAdmin()`, `isOrgAdmin()`, `isOrgUser()`, `isElectionAdmin()`, `isElectionUser()`, `isVoter()`, `isCandidate()`, `isOrgManager()` (org_admin/org_user/super_admin), `isElectionManager()` (all management roles).
 
 ### Scheduler
 `routes/console.php` runs every minute checking for elections to start/stop (`StartElectionJob` / `StopElectionJob`). Requires `php artisan schedule:work` running.
@@ -110,12 +112,12 @@ Route-level protection uses `->middleware('role:super_admin')` or `'role:super_a
 | `app/Http/Controllers/Api/V1/OrganizationController.php` | Public registration (org + admin in 1 transaction), email verify, profile view/update |
 | `app/Http/Controllers/Api/V1/Admin/OrganizationController.php` | Super admin: paginated list, show, toggle status |
 | `app/Jobs/SendOrganizationVerificationMailJob.php` | Dispatches 24h signed verification URL email |
-| `app/Models/Election.php` | Tenant model; status helpers, `votingStartsAt()`, `votingEndsAt()` in Asia/Dhaka |
+| `app/Models/Election.php` | Tenant model; status helpers, `votingStartsAt()`, `votingEndsAt()` in Asia/Dhaka; `allow_multi_post` (boolean) controls both candidate multi-post assignment and nomination multi-post selection |
 | `app/Policies/ElectionPolicy.php` | Enforces org ownership + `isEditable()` / `isImmutable()` guards |
 | `app/Http/Controllers/Api/V1/ElectionController.php` | CRUD + status transitions + duplicate endpoint |
 | `app/Jobs/StartElectionJob.php` | Transitions election `scheduled → active`; dispatched with delay from observer |
 | `app/Jobs/StopElectionJob.php` | Transitions election `active → completed`; dispatched with delay from observer |
-| `app/Observers/ElectionObserver.php` | On `status → scheduled`, dispatches delayed Start/Stop jobs |
+| `app/Observers/ElectionObserver.php` | On `status → scheduled`, dispatches delayed Start/Stop jobs; on `publish_at` set, dispatches delayed PublishElectionJob |
 | `app/Models/Voter.php` | TenantModel; belongs to Election, User, Organization |
 | `app/Policies/VoterPolicy.php` | Org ownership + `isEditable()` guard on add/delete |
 | `app/Http/Controllers/Api/V1/VoterController.php` | Index, store (firstOrCreate user), destroy, resendInvitation, import |
@@ -140,31 +142,56 @@ Route-level protection uses `->middleware('role:super_admin')` or `'role:super_a
 | `app/Exports/ResultsExport.php` | Multi-sheet Excel export (Summary + one sheet per post) |
 | `app/Http/Controllers/Api/V1/ResultController.php` | `show()`, `exportPdf()`, `exportExcel()`, `myCandidateResults()` — access-controlled by role |
 | `resources/views/pdf/election-results.blade.php` | DomPDF template — A4 results report with winner highlighting |
+| `app/Models/Nomination.php` | TenantModel; token generation, status helpers, `logTransition(?string)`; belongs to Election/Organization; pivot to Post via nomination_posts |
+| `app/Models/NominationStatusLog.php` | Append-only status audit log (no updated_at) |
+| `app/Policies/NominationPolicy.php` | manage-nominations permission + org-scoped access: verify/reject/markPaid/accept; super_admin bypasses |
+| `app/Http/Controllers/Api/V1/PublicNominationController.php` | Public: list published elections, submit nomination (in DB::transaction), track by token/email+mobile, download PDF |
+| `app/Http/Controllers/Api/V1/NominationController.php` | EC/super_admin: index, show, verify, reject, markPaid, accept (auto-creates User+Voter+Candidate in transaction), acceptedForPost (uses whereExists on pivot to avoid TenantScope in subquery) |
+| `app/Jobs/PublishElectionJob.php` | Transitions `draft → published` at `publish_at` time |
+| `resources/views/pdf/nomination-form.blade.php` | DomPDF template — A4 nomination form; Kalpurush font (normal+bold) via @font-face file:/// path; token, status, posts applied |
+| `backend/storage/fonts/` | Kalpurush TTF + UFM files (normal + bold) manually registered for DomPDF Bengali rendering |
 
 ## Frontend Architecture
 
 ### Route Namespacing
 - `/` — public landing page (`LandingPage.jsx`)
+- `/nominations`, `/nominations/track`, `/nominations/:id/apply` — public nomination portal (no auth)
 - `/admin/*` — super_admin only (`SuperAdminLayout`)
-- `/dashboard`, `/elections/*` — management roles: org_admin, org_user, election_admin, election_user (`OrgAdminLayout`)
+- `/dashboard`, `/elections/*` — management roles: org_admin, org_user, election_admin, election_user, election_commission (`OrgAdminLayout`)
 - `/voter/*` — voter + candidate (`VoterLayout`)
 
 ### Key Frontend Files
 | File | Purpose |
 |------|---------|
 | `src/hooks/useBasePath.js` | Returns `/admin`, `''`, or `/voter` based on current user role |
-| `src/pages/public/LandingPage.jsx` | Bengali landing page with features, roles, how-it-works sections |
+| `src/pages/public/LandingPage.jsx` | Bengali landing page with features, roles, how-it-works sections, nomination CTA section (apply + track buttons), header/footer nomination links |
 | `src/pages/admin/RolesPage.jsx` | Permissions matrix editor + user role assignment table |
 | `src/pages/voter/CandidateResultsPage.jsx` | Candidate's own vote tally per post with charts |
 | `src/api/roles.js` | `getRolesAndPermissions`, `updateRolePermissions`, `getUsers`, `assignUserRole` |
 | `src/api/liveElections.js` | Admin live election management API (toggle display, refresh interval) |
 | `src/pages/admin/LiveElectionsPage.jsx` | Admin UI to toggle live display per election + set refresh interval |
 | `src/i18n/bn.json` + `en.json` | Full Bengali + English translations for all UI text |
+| `src/api/nominations.js` | Public + EC nomination API client |
+| `src/pages/public/NominationsPortalPage.jsx` | Public portal — browse published elections, apply |
+| `src/pages/public/NominationApplyPage.jsx` | Apply form → token success screen + PDF download; uses `!election.allow_multi_post` to enforce single-post selection |
+| `src/pages/public/NominationTrackPage.jsx` | Track nomination by token or email+mobile |
+| `src/components/elections/tabs/NominationsTab.jsx` | EC dashboard tab — filter/verify/reject/pay/accept nominations; visible to election_admin (manage-nominations permission) + super_admin |
+| `src/components/elections/tabs/PostsTab.jsx` | Posts + candidates panel; nominated-mode: accepted-nominees dropdown (acceptedForPost API, staleTime:0); canEdit() includes published+nominated; React Query v5 invalidateQueries({ queryKey }) syntax |
 
 ### Role-Based UI Guards
-- `RoleGuard` checks `user.role` (singular string from `MeController`)
+- `RoleGuard` checks `user.roles[]` and `user.permissions[]` from `MeController`
 - Management roles share `OrgAdminLayout` — role-specific title set dynamically
-- Election detail tabs (Voters, Posts, Candidates, Results) conditionally show actions based on `user.role` in the component
+- Election detail tabs (Voters, Posts, Candidates, Nominations, Results) conditionally show actions based on permissions via `hasPermission()` selector
+- Nominations tab shown when user has `manage-nominations` permission (election_admin or super_admin)
+
+### React Query Notes
+- This project uses `@tanstack/react-query` **v5** — always use object syntax: `queryClient.invalidateQueries({ queryKey: [...] })`
+- Passing a plain array to `invalidateQueries` is a **silent no-op** in v5 (v4 syntax)
+- Use `refetchType: 'all'` when invalidating queries that may be disabled (`enabled: false`)
+
+### Laravel Multi-Tenancy Notes
+- `withoutGlobalScopes()` only bypasses scopes on the **root** model query — `whereHas()` on related TenantModels still applies their TenantScope
+- When filtering through pivot tables, use raw `whereExists` on the pivot table directly to avoid TenantScope injection in subqueries
 
 ## Workflow Tracking
 

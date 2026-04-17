@@ -97,18 +97,18 @@ export default function VotersTab({ election }) {
 
   const removeMutation = useMutation({
     mutationFn: (voterId) => deleteVoter(election.id, voterId),
-    onSuccess:  () => queryClient.invalidateQueries(qKey),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: qKey }),
   })
 
   const resendMutation = useMutation({
     mutationFn: (voterId) => resendInvitation(election.id, voterId),
-    onSettled: () => queryClient.invalidateQueries(qKey),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: qKey }),
   })
 
   const copyMutation = useMutation({
     mutationFn: (sourceId) => copyVotersFrom(election.id, sourceId),
     onSuccess:  (res) => {
-      queryClient.invalidateQueries(qKey)
+      queryClient.invalidateQueries({ queryKey: qKey })
       setShowCopy(false)
       const d = res.data.data
       alert(`${d.copied} জন কপি হয়েছে, ${d.skipped} জন বাদ পড়েছে।`)
@@ -120,7 +120,7 @@ export default function VotersTab({ election }) {
     mutationFn: (file) => importVoters(election.id, file),
     onSuccess:  (res) => {
       setImportResult(res.data.data)
-      queryClient.invalidateQueries(qKey)
+      queryClient.invalidateQueries({ queryKey: qKey })
     },
     onError: (err) => {
       const resp = err.response?.data
@@ -138,7 +138,7 @@ export default function VotersTab({ election }) {
       const { sent = 0, failed = 0 } = res.data.data ?? {}
       setShowBulkModal(false)
       setSelectedIds(new Set())
-      queryClient.invalidateQueries(qKey)
+      queryClient.invalidateQueries({ queryKey: qKey })
       const msg = failed > 0
         ? `${sent} জনকে সফলভাবে পাঠানো হয়েছে, ${failed} জনের ক্ষেত্রে ব্যর্থ হয়েছে।`
         : t('voter.bulk_email_sent', { count: sent })
@@ -460,7 +460,7 @@ export default function VotersTab({ election }) {
         <AddVoterModal
           election={election}
           onClose={() => setShowAdd(false)}
-          onSuccess={() => { queryClient.invalidateQueries(qKey); setShowAdd(false) }}
+          onSuccess={() => { queryClient.invalidateQueries({ queryKey: qKey }); setShowAdd(false) }}
         />
       )}
 
@@ -469,7 +469,7 @@ export default function VotersTab({ election }) {
           election={election}
           voter={editVoter}
           onClose={() => setEditVoter(null)}
-          onSuccess={() => { queryClient.invalidateQueries(qKey); setEditVoter(null) }}
+          onSuccess={() => { queryClient.invalidateQueries({ queryKey: qKey }); setEditVoter(null) }}
         />
       )}
 

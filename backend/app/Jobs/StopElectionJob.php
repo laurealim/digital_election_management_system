@@ -18,7 +18,7 @@ class StopElectionJob implements ShouldQueue
 
     public function handle(): void
     {
-        $election = Election::find($this->election->id);
+        $election = Election::withoutGlobalScopes()->find($this->election->id);
 
         if (! $election || $election->status !== 'active') {
             return;

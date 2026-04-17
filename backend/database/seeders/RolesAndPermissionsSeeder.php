@@ -50,6 +50,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-system',
             'send-reset-password',
             'manage-roles',
+            'manage-nominations',
         ];
 
         foreach ($permissions as $permission) {
@@ -93,7 +94,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-detailed-reports',
         ]);
 
-        // ─── Election Admin — full election CRUD, voters, posts, candidates ───
+        // ─── Election Admin — full election CRUD, voters, posts, candidates, nominations ─
         $electionAdmin = Role::firstOrCreate(['name' => 'election_admin', 'guard_name' => 'web']);
         $electionAdmin->syncPermissions([
             'create-elections',
@@ -109,6 +110,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'export-results',
             'view-detailed-reports',
             'send-reset-password',
+            'manage-nominations',
         ]);
 
         // ─── Election User — create/edit elections, manage voters/posts/candidates, view results ─

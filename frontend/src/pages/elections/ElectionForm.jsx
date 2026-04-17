@@ -46,6 +46,7 @@ export default function ElectionForm() {
     voting_start_time: toTimeStr(minDt),
     voting_end_time:   toTimeStr(new Date(minDt.getTime() + 7 * 60 * 60 * 1000)),
     candidate_mode:    'selected',
+    publish_at:        '',
     allow_multi_post:  false,
     organization_id:   '',
   })
@@ -77,6 +78,7 @@ export default function ElectionForm() {
         voting_start_time: existing.voting_start_time?.slice(0, 5) ?? '',
         voting_end_time:   existing.voting_end_time?.slice(0, 5) ?? '',
         candidate_mode:    existing.candidate_mode,
+        publish_at:        existing.publish_at ? existing.publish_at.slice(0, 16) : '',
         allow_multi_post:  existing.allow_multi_post,
       })
     }
@@ -230,10 +232,11 @@ export default function ElectionForm() {
 
             <div className="space-y-2">
               <Label>{t('election.candidate_mode_label')}</Label>
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap">
                 {[
-                  { value: 'selected', label: t('election.candidate_mode_selected') },
-                  { value: 'open',     label: t('election.candidate_mode_open') },
+                  { value: 'selected',  label: t('election.candidate_mode_selected') },
+                  { value: 'open',      label: t('election.candidate_mode_open') },
+                  { value: 'nominated', label: 'মনোনীত (Nominated)' },
                 ].map((mode) => (
                   <label key={mode.value} className="flex items-center gap-2 text-sm cursor-pointer">
                     <input
@@ -247,6 +250,18 @@ export default function ElectionForm() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="publish_at">স্বয়ংক্রিয় প্রকাশের সময় (ঐচ্ছিক)</Label>
+              <Input
+                id="publish_at"
+                type="datetime-local"
+                value={form.publish_at}
+                onChange={set('publish_at')}
+              />
+              <p className="text-xs text-muted-foreground">নির্ধারিত সময়ে স্বয়ংক্রিয়ভাবে Draft থেকে Published-এ পরিবর্তন হবে।</p>
+              <FieldError name="publish_at" />
             </div>
 
             <label className="flex items-center gap-2 text-sm cursor-pointer">

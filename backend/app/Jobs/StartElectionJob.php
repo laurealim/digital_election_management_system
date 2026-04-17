@@ -18,7 +18,7 @@ class StartElectionJob implements ShouldQueue
     public function handle(): void
     {
         // Re-fetch to get the latest status — avoid race conditions
-        $election = Election::find($this->election->id);
+        $election = Election::withoutGlobalScopes()->find($this->election->id);
 
         if (! $election || $election->status !== 'scheduled') {
             return;

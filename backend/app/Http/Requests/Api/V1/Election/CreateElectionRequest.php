@@ -22,7 +22,8 @@ class CreateElectionRequest extends FormRequest
             // 'election_date'      => ['required', 'date_format:Y-m-d'],
             // 'voting_start_time'  => ['required', 'date_format:H:i'],
             // 'voting_end_time'    => ['required', 'date_format:H:i', 'after:voting_start_time'],
-            'candidate_mode'     => ['sometimes', Rule::in(['selected', 'open'])],
+            'candidate_mode'     => ['sometimes', Rule::in(['selected', 'open', 'nominated'])],
+            'publish_at'         => ['nullable', 'date'],
             'allow_multi_post'   => ['sometimes', 'boolean'],
             'organization_id'    => [
                 Rule::requiredIf(fn () => Auth::user()?->hasRole('super_admin')),

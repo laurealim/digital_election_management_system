@@ -1,0 +1,9 @@
+{
+    "notosansbengali": {
+        "normal": "E:\\wamp64\\www\\dems\\backend\\storage\\fonts\/notosansbengali_normal"
+    },
+    "kalpurush": {
+        "normal": "E:\\wamp64\\www\\dems\\backend\\storage\\fonts\/kalpurush_normal",
+        "bold": "E:\\wamp64\\www\\dems\\backend\\storage\\fonts\/kalpurush_bold"
+    }
+}

@@ -26,6 +26,8 @@ use App\Http\Controllers\Api\V1\ModeratorResetPasswordController;
 use App\Http\Controllers\Api\V1\PublicLiveElectionController;
 use App\Http\Controllers\Api\V1\Admin\LiveElectionController as AdminLiveElectionController;
 use App\Http\Controllers\Api\V1\EmailDispatchController;
+use App\Http\Controllers\Api\V1\PublicNominationController;
+use App\Http\Controllers\Api\V1\NominationController;
 
 Route::prefix('v1')->group(function () {
 
@@ -35,6 +37,15 @@ Route::prefix('v1')->group(function () {
         Route::post('forgot-password',[ForgotPasswordController::class, 'store'])->middleware('throttle:10,1');
         Route::post('reset-password', [ResetPasswordController::class, 'store'])->middleware('throttle:10,1');
         Route::post('setup-password', [SetupPasswordController::class, 'store'])->middleware('throttle:10,1');
+    });
+
+    // ─── Public Nomination Routes (no auth) ──────────────────────────────────
+    Route::prefix('public')->group(function () {
+        Route::get('designations',               [PublicNominationController::class, 'designations']);
+        Route::get('elections',                  [PublicNominationController::class, 'elections']);
+        Route::post('nominations',               [PublicNominationController::class, 'store']);
+        Route::get('nominations/track',          [PublicNominationController::class, 'track']);
+        Route::get('nominations/{token}/pdf',    [PublicNominationController::class, 'downloadPdf']);
     });
 
     // ─── Public Results (no auth) ─────────────────────────────────────────────
@@ -100,6 +111,19 @@ Route::prefix('v1')->group(function () {
             Route::delete('posts/{post}/candidates/{candidate}', [CandidateController::class, 'destroy']);
         });
 
+        // Nominations (EC + super_admin)
+        Route::prefix('elections/{election}')
+            ->middleware('permission:manage-nominations')
+            ->group(function () {
+                Route::get('nominations',                                        [NominationController::class, 'index']);
+                Route::get('nominations/{nomination}',                         [NominationController::class, 'show']);
+                Route::get('posts/{post}/accepted-nominations',                [NominationController::class, 'acceptedForPost']);
+                Route::patch('nominations/{nomination}/verify',                [NominationController::class, 'verify']);
+                Route::patch('nominations/{nomination}/reject',                [NominationController::class, 'reject']);
+                Route::patch('nominations/{nomination}/mark-paid',             [NominationController::class, 'markPaid']);
+                Route::patch('nominations/{nomination}/accept',                [NominationController::class, 'accept']);
+            });
+
         // Voting
         Route::post('elections/{election}/vote', [VoteController::class, 'store'])
             ->middleware('throttle:voting');
@@ -134,6 +158,7 @@ Route::prefix('v1')->group(function () {
             Route::put('users/{user}/role',                 [AdminUserController::class, 'updateRole']);
             Route::patch('users/{user}/toggle-status',      [AdminUserController::class, 'toggleStatus']);
             Route::post('users/{user}/resend-setup',        [AdminUserController::class, 'resendSetupEmail']);
+            Route::post('users/{user}/generate-reset-link', [AdminUserController::class, 'generateResetLink']);
             Route::delete('users/{user}',                   [AdminUserController::class, 'destroy']);
             Route::get('users/{user}/assigned-elections',    [AdminUserController::class, 'assignedElections']);
             Route::put('users/{user}/assigned-elections',    [AdminUserController::class, 'syncAssignedElections']);

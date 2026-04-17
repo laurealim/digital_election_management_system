@@ -4,13 +4,16 @@ import { Vote, LayoutDashboard, Trophy, KeyRound } from 'lucide-react'
 import useAuthStore, { selectRoles, hasPermission } from '@/store/authStore'
 
 const ROLE_TITLES = {
-  moderator:      'মডারেটর',
-  org_admin:      'সংগঠন অ্যাডমিন',
-  org_user:       'সংগঠন ব্যবহারকারী',
-  election_admin: 'নির্বাচন অ্যাডমিন',
-  election_user:  'নির্বাচন ব্যবহারকারী',
+  moderator:           'মডারেটর',
+  org_admin:           'সংগঠন অ্যাডমিন',
+  org_user:            'সংগঠন ব্যবহারকারী',
+  election_admin:      'নির্বাচন অ্যাডমিন',
+  election_user:       'নির্বাচন ব্যবহারকারী',
 }
 
+// const baseLinks = [
+//   { to: '/dashboard', label: 'ড্যাশবোর্ড', icon: LayoutDashboard },
+// ]
 const baseLinks = [
   { to: '/dashboard', label: 'ড্যাশবোর্ড', icon: LayoutDashboard },
   { to: '/elections', label: 'নির্বাচন',    icon: Vote },
@@ -20,15 +23,19 @@ const baseLinks = [
 export default function OrgAdminLayout() {
   const roles = useAuthStore(selectRoles)
   const canResetPassword = useAuthStore(hasPermission('send-reset-password'))
-  console.log('User roles:', roles)  // Debugging line to check roles in OrgAdminLayout
-  console.log('Can reset password:', canResetPassword)  // Debugging line to check permission
+  // console.log('User roles:', roles)  // Debugging line to check roles in OrgAdminLayout
+  // console.log('Can reset password:', canResetPassword)  // Debugging line to check permission
 
   // Show highest-priority management role title
   const title = ROLE_TITLES[roles.find((r) => ROLE_TITLES[r])] ?? 'ব্যবস্থাপনা'
 
   const links = canResetPassword
     ? [...baseLinks, { to: '/reset-password-tool', label: 'পাসওয়ার্ড রিসেট', icon: KeyRound }]
-    : baseLinks
+    : baseLinks;
+  
+    // const links = canResetPassword
+    // ? [...baseLinks, { to: '/reset-password-tool', label: 'পাসওয়ার্ড রিসেট', icon: KeyRound }]
+    // : baseLinks;
 
   return (
     <div className="flex min-h-screen bg-background">

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,6 +19,7 @@ class Election extends \App\Models\TenantModel
         'voting_end_time',
         'status',
         'candidate_mode',
+        'publish_at',
         'allow_multi_post',
         'is_result_published',
         'is_public_result',
@@ -32,6 +32,7 @@ class Election extends \App\Models\TenantModel
     {
         return [
             'election_date'          => 'date',
+            'publish_at'             => 'datetime',
             'allow_multi_post'       => 'boolean',
             'is_result_published'    => 'boolean',
             'is_public_result'       => 'boolean',
@@ -68,11 +69,21 @@ class Election extends \App\Models\TenantModel
         return $this->hasMany(Vote::class);
     }
 
+    public function nominations(): HasMany
+    {
+        return $this->hasMany(Nomination::class);
+    }
+
     // ─── Status Helpers ───────────────────────────────────────────────────────
 
     public function isDraft(): bool
     {
         return $this->status === 'draft';
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->status === 'published';
     }
 
     public function isScheduled(): bool
@@ -104,11 +115,20 @@ class Election extends \App\Models\TenantModel
     }
 
     /**
-     * Election can be edited (not yet started).
+     * Nomination is open while election is in 'published' status.
+     * It closes permanently when election moves to 'scheduled'.
+     */
+    public function isNominationOpen(): bool
+    {
+        return $this->status === 'published' && $this->candidate_mode === 'nominated';
+    }
+
+    /**
+     * Election can be edited (not yet started or in nomination phase).
      */
     public function isEditable(): bool
     {
-        return in_array($this->status, ['draft', 'scheduled']);
+        return in_array($this->status, ['draft', 'published', 'scheduled']);
     }
 
     /**

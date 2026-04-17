@@ -21,7 +21,8 @@ class UpdateElectionRequest extends FormRequest
             // 'election_date'      => ['sometimes', 'date_format:Y-m-d'],
             // 'voting_start_time'  => ['sometimes', 'date_format:H:i'],
             // 'voting_end_time'    => ['sometimes', 'date_format:H:i', 'after:voting_start_time'],
-            'candidate_mode'     => ['sometimes', Rule::in(['selected', 'open'])],
+            'candidate_mode'     => ['sometimes', Rule::in(['selected', 'open', 'nominated'])],
+            'publish_at'         => ['sometimes', 'nullable', 'date'],
             'allow_multi_post'   => ['sometimes', 'boolean'],
         ];
     }
